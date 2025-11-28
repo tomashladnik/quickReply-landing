@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 // src/app/(public)/Dentalscandemo/page.tsx
 "use client";
 
@@ -25,11 +26,11 @@ export default function DentalScanPage() {
           <div className="flex justify-between items-center h-16">
             <a href="/" className="flex items-center">
               <Image
-                src="/ReplyQuick.jpeg"
+                src="/logo.png"
                 alt="ReplyQuick Logo"
                 width={120}
                 height={40}
-                className="w-[120px] h-auto object-contain"
+                className="w-[100px] h-auto object-contain"
                 priority
               />
             </a>
@@ -44,7 +45,7 @@ export default function DentalScanPage() {
                   className="text-gray-600 hover:text-[#4ebff7] transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
                   Home
