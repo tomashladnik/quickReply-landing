@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ServiceBenefitsSection as Header } from "./components/sections/ServiceBenefitsSection";
-import { Footer } from "./components/sections/FAQSection";
+import { LayoutWrapper } from "./components/LayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,16 +41,10 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        {/* Use semantic <header> tag */}
-        <Header />
-
-        {/* Use semantic <main> tag. `flex-grow` makes it fill available space. */}
-        <main id="main-content" className="w-full flex-grow">
+        {/* Use the LayoutWrapper to conditionally show header/footer */}
+        <LayoutWrapper>
           {children}
-        </main>
-
-        {/* Use semantic <footer> tag */}
-        <Footer />
+        </LayoutWrapper>
       </body>
     </html>
   );

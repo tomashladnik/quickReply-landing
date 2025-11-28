@@ -22,6 +22,11 @@ export const navItems = [
     label: "FAQ",
     href: "/#faq-section",
   },
+  {
+    index: 4,
+    label: "DentalScan",
+    href: "/Dentalscandemo",
+  },
 ];
 
 export const features: FeatureData[] = [
