@@ -20,66 +20,71 @@ export default function DentalScanPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <a href="/" className="flex items-center">
-              <Image
-                src="/logo.png"
-                alt="ReplyQuick Logo"
-                width={120}
-                height={40}
-                className="w-[100px] h-auto object-contain"
-                priority
-              />
-            </a>
+      {/* Navigation - Matching Main Page Header Style */}
+      <header className="sticky top-0 z-50 w-full h-[80px] bg-white shadow-[0_0_22px_#4ebff740] backdrop-blur-lg flex items-center justify-between px-4 sm:px-6 md:px-10 lg:px-58">
+        {/* Logo */}
+        <a href="/" className="z-20">
+          <Image
+            src="/logo.png"
+            alt="ReplyQuick Logo"
+            width={100}
+            height={100}
+            className="object-cover rounded-lg w-[82px] h-[46px]"
+          />
+        </a>
 
-            <div className="flex items-center gap-8">
-              <div className="hidden md:flex gap-6 items-center">
-                <span className="text-gray-600 hover:text-[#4ebff7] transition-colors">
-                  DentalScan
-                </span>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-[#4ebff7] transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                >
-                  Home
-                </a>
-                <a
-                  href="#features"
-                  className="text-gray-600 hover:text-[#4ebff7] transition-colors"
-                >
-                  Key Features
-                </a>
-                <a
-                  href="#how-it-works"
-                  className="text-gray-600 hover:text-[#4ebff7] transition-colors"
-                >
-                  How It Works
-                </a>
-                <a
-                  href="#faq"
-                  className="text-gray-600 hover:text-[#4ebff7] transition-colors"
-                >
-                  FAQ
-                </a>
-              </div>
-            </div>
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-x-6 lg:gap-x-20">
+          <a
+            href="#"
+            className="font-medium text-black text-base hover:text-gray-600 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            Home
+          </a>
+          <a
+            href="#features"
+            className="font-medium text-black text-base hover:text-gray-600 transition-colors"
+          >
+            Key Features
+          </a>
+          <a
+            href="#how-it-works"
+            className="font-medium text-black text-base hover:text-gray-600 transition-colors"
+          >
+            How It Works
+          </a>
+          <a
+            href="#faq"
+            className="font-medium text-black text-base hover:text-gray-600 transition-colors"
+          >
+            FAQ
+          </a>
+        </nav>
 
-            <button
-              onClick={() => setShowDemoModal(true)}
-              className="px-6 py-2.5 bg-[#4ebff7] text-white rounded-lg font-semibold hover:bg-[#3da5d9] transition-colors shadow-md hover:shadow-lg"
-            >
-              Get Started
-            </button>
-          </div>
+        {/* CTA Button */}
+        <div className="hidden md:flex">
+          <button
+            onClick={() => setShowDemoModal(true)}
+            className="px-6 py-2 text-xl font-semibold bg-gradient-to-r from-[#4EBFF7] to-[#35A3E8] text-white rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-300/40 hover:saturate-150"
+          >
+            Get Started
+          </button>
         </div>
-      </nav>
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden flex items-center z-30">
+          <button
+            onClick={() => setShowDemoModal(true)}
+            className="px-4 py-2 bg-[#4ebff7] text-white rounded-lg font-semibold text-sm hover:bg-[#3da5d9] transition-colors"
+          >
+            Get Started
+          </button>
+        </div>
+      </header>
 
       {/* Hero */}
       <HeroSection onOpenDemo={() => setShowDemoModal(true)} />
