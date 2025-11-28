@@ -4,28 +4,28 @@ import { FeatureData } from "@/app/lib/types/types";
 export const navItems = [
   {
     index: 0,
+    label: "DentalScan",
+    href: "/Dentalscandemo",
+  },
+  {
+    index: 1,
     label: "Home",
     href: "/",
   },
   {
-    index: 1,
+    index: 2,
     label: "Key Features",
     href: "/#call-to-action",
   },
   {
-    index: 2,
+    index: 3,
     label: "How it works",
     href: "/#how-it-works",
   },
   {
-    index: 3,
+    index: 4,
     label: "FAQ",
     href: "/#faq-section",
-  },
-  {
-    index: 4,
-    label: "DentalScan",
-    href: "/Dentalscandemo",
   },
 ];
 

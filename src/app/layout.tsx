@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ReplyQuick | Lead Recovery for Service Businesses", // Example of a better title
+  title: "ReplyQuick | Automation & DentalScan Solutions",
   description:
-    "Never miss a lead again. ReplyQuick instantly follows up on missed calls to qualify and book customers.",
+    "ReplyQuick automates your customer workflow end-to-end, DentalScan empowers clinics with instant dental assessments and clear, guided reporting.",
   icons: './favicon.ico'
 };
 

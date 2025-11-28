@@ -69,15 +69,13 @@ export function LiveDemoDialog({
           {/* Header */}
           {/* Responsive: Adjusted font size for better mobile display */}
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
-            Get a Live Demo of{" "}
-            <span className="text-[#4ebff7]">ReplyQuick</span>
+            ReplyQuick | Automation & <span className="text-[#4ebff7]">DentalScan Solutions</span>
           </h2>
 
           {/* Description */}
           {/* Responsive: Increased font size for better readability */}
           <p className="text-sm text-gray-600">
-            Enter your Email to see how ReplyQuick turns missed calls into
-            paying clients—no setup changes needed.
+            ReplyQuick automates your customer workflow end-to-end, DentalScan empowers clinics with instant dental assessments and clear, guided reporting.
           </p>
 
           {/* --- CORE RESPONSIVE IMPROVEMENT: Flexible Sizing --- */}
