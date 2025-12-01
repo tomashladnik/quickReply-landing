@@ -32,7 +32,7 @@ export default function HeroSection({ onOpenDemo }: HeroSectionProps) {
                 onClick={onOpenDemo}
                 className="px-8 py-4 bg-[#4ebff7] text-white rounded-lg font-semibold text-lg hover:bg-[#3da5d9] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                Contact Sales
+                Live Demo
               </button>
               <button
                 onClick={() =>
