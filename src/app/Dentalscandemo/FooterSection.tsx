@@ -1,5 +1,6 @@
 // src/app/(public)/Dentalscandemo/FooterSection.tsx
 import Image from "next/image";
+import Link from "next/link";
 import { Mail, Phone, Instagram, Linkedin, Twitter } from "lucide-react";
 
 export default function FooterSection() {
@@ -30,12 +31,12 @@ export default function FooterSection() {
             <h4 className="font-bold text-lg mb-4">EXPLORE</h4>
             <ul className="space-y-2">
               <li>
-                <a
+                <Link
                   href="/"
                   className="text-white/80 hover:text-white transition-colors"
                 >
                   Home
-                </a>
+                </Link>
               </li>
               <li>
                 <a
