@@ -54,19 +54,37 @@ model DemoPatient {
 }
 
 model DemoScan {
-  id          String      @id @default(cuid())
-  status      String      @default("link_sent") // link_sent | submitted | completed
+  id          String        @id @default(cuid())
+  status      String        @default("link_sent") // link_sent | submitted | completed
   imageUrls   Json?
   result      Json?
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime      @default(now())
   submittedAt DateTime?
   completedAt DateTime?
 
-  dentist     DemoDentist? @relation(fields: [dentistId], references: [id])
+  dentist     DemoDentist?  @relation(fields: [dentistId], references: [id])
   dentistId   String?
 
-  patient     DemoPatient? @relation(fields: [patientId], references: [id])
+  patient     DemoPatient?  @relation(fields: [patientId], references: [id])
   patientId   String?
 
+  // NEW: short links associated with this scan
+  links       DemoScanLink[]
+
   @@map("demo_scan")
+}
+
+model DemoScanLink {
+  id        String      @id @default(cuid())
+  code      String      @unique        // e.g. "AB3F9X2K"
+  scan      DemoScan    @relation(fields: [scanId], references: [id])
+  scanId    String
+
+  dentistId String?
+  patientId String?
+
+  createdAt DateTime    @default(now())
+  expiresAt DateTime?
+
+  @@map("demo_scan_link")
 }

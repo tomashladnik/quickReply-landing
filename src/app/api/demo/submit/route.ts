@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/app/api/demo/submit/route.ts
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
+import { supabaseAdmin, SUPABASE_DEMO_BUCKET } from "@/lib/supabase";
 
 const DEMO_SECRET = process.env.DEMO_DENTAL_SECRET || "demo-secret";
 
@@ -14,6 +17,23 @@ const ML_BASE_URL = RAW_ML_URL.replace(/\/+$/, "");
 
 // Map your 5 demo views → ML views used in real app
 const VIEW_ORDER = ["left", "right", "front", "top", "bottom"] as const;
+
+function deriveFolderPathFromImageUrl(
+  imageUrl: string,
+  bucket: string
+): string | null {
+  const marker = `/${bucket}/`;
+  const idx = imageUrl.indexOf(marker);
+  if (idx === -1) return null;
+
+  // e.g. "dentist123/patient456/left.jpg"
+  const afterBucket = imageUrl.substring(idx + marker.length);
+  const lastSlash = afterBucket.lastIndexOf("/");
+  if (lastSlash === -1) return null;
+
+  // "dentist123/patient456"
+  return afterBucket.substring(0, lastSlash);
+}
 
 export async function POST(req: Request) {
   try {
@@ -41,10 +61,7 @@ export async function POST(req: Request) {
     });
 
     if (!scan) {
-      return NextResponse.json(
-        { error: "Scan not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Scan not found" }, { status: 404 });
     }
 
     const imageUrls = (scan.imageUrls as string[] | null) ?? [];
@@ -125,7 +142,50 @@ export async function POST(req: Request) {
       );
     }
 
-    // ----- Save result to DemoScan -----
+    // ----- Save ML JSON into same patient folder as images -----
+    try {
+      const firstImageUrl = imageUrls[0];
+      const folderPath = deriveFolderPathFromImageUrl(
+        firstImageUrl,
+        SUPABASE_DEMO_BUCKET
+      );
+
+      if (!folderPath) {
+        console.error(
+          "[DEMO_SUBMIT] Could not derive folder path from image URL",
+          firstImageUrl
+        );
+      } else {
+        const jsonPath = `${folderPath}/result.json`;
+        const jsonString = JSON.stringify(mlJson, null, 2);
+        const jsonBlob = new Blob([jsonString], {
+          type: "application/json",
+        });
+
+        const { error: jsonUploadError } = await supabaseAdmin.storage
+          .from(SUPABASE_DEMO_BUCKET)
+          .upload(jsonPath, jsonBlob, {
+            contentType: "application/json",
+            upsert: true,
+          });
+
+        if (jsonUploadError) {
+          console.error(
+            "[DEMO_SUBMIT] failed to upload ML JSON to Supabase",
+            jsonUploadError
+          );
+        } else {
+          console.log(
+            "[DEMO_SUBMIT] ML JSON uploaded to Supabase at",
+            jsonPath
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[DEMO_SUBMIT] exception while uploading ML JSON", e);
+    }
+
+    // ----- Save result to DemoScan (DB) -----
     const now = new Date();
 
     await prisma.demoScan.update({

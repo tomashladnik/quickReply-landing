@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/app/api/demo/create/route.ts
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase"; // service client
 import jwt from "jsonwebtoken";
