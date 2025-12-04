@@ -88,3 +88,48 @@ model DemoScanLink {
 
   @@map("demo_scan_link")
 }
+
+model Scan {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()::text")) @db.Text
+  demoScanId           String?   @map("demo_scan_id") @db.Text
+  patientName          String?   @map("patient_name") @db.Text
+  patientEmail         String?   @map("patient_email") @db.Text
+  patientPhone         String?   @map("patient_phone") @db.Text
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  // Whitening/Aesthetic fields
+  brightnessScore      Decimal?  @map("brightness_score") @db.Decimal(10, 2)
+  shadeValue           String?   @map("shade_value") @db.Text
+  idealShade           String?   @map("ideal_shade") @db.Text
+
+  // Flow type and routing
+  flowType             String?   @map("flow_type") @db.Text
+
+  // Status fields
+  simplifiedStatus     String?   @map("simplified_status") @db.Text
+  clinicRecommended    Boolean?  @default(false) @map("clinic_recommended")
+
+  // School-specific fields
+  schoolLevel          String?   @map("school_level") @db.Text
+  consentMethod        String?   @map("consent_method") @db.Text
+  parentContact        String?   @map("parent_contact") @db.Text
+  minorProtected       Boolean?  @default(false) @map("minor_protected")
+  reportDeliveryStatus String?   @default("pending") @map("report_delivery_status") @db.Text
+
+  // Raw JSON storage
+  originalJson         Json?     @map("original_json")
+
+  // Metadata
+  status               String?   @default("pending") @db.Text
+  completedAt          DateTime? @map("completed_at")
+  resultJson           Json?     @map("result_json")
+
+  @@index([demoScanId], map: "scans_demo_scan_id_idx")
+  @@index([flowType], map: "scans_flow_type_idx")
+  @@index([status], map: "scans_status_idx")
+  @@index([createdAt], map: "scans_created_at_idx")
+  @@index([reportDeliveryStatus], map: "scans_report_delivery_status_idx")
+  @@index([schoolLevel], map: "scans_school_level_idx")
+  @@map("scans")
+}
