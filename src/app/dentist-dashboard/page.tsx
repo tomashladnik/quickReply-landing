@@ -2,7 +2,7 @@
 // src/app/dentist-dashboard/page.tsx
 "use client";
 
-import { useState, FormEvent, ChangeEvent, useEffect } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
@@ -23,7 +23,7 @@ interface Patient {
   analysisResult?: any;
 }
 
-export default function DentistDashboardClient() {
+function DentistDashboardClient() {
   // 🔹 Read query params from URL: /dentist-dashboard?demoId=...
   const searchParams = useSearchParams();
   const dentistId = searchParams.get("demoId") || ""; // this is the DemoDentist.id
@@ -744,5 +744,13 @@ export default function DentistDashboardClient() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DentistDashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <DentistDashboardClient />
+    </Suspense>
   );
 }
