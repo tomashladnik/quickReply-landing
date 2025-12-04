@@ -1,13 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -24,4 +21,70 @@ model DentalLead {
   createdAt   DateTime @default(now())
 
   @@map("DentalLead")
+}
+
+// Demo-only models (tables used only for the DentalScan demo flow)
+
+model DemoDentist {
+  id        String        @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  createdAt DateTime      @default(now())
+
+  patients  DemoPatient[]
+  scans     DemoScan[]
+
+  @@map("demo_dentist")
+}
+
+model DemoPatient {
+  id        String      @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  createdAt DateTime    @default(now())
+
+  dentist   DemoDentist @relation(fields: [dentistId], references: [id])
+  dentistId String
+
+  scans     DemoScan[]
+
+  @@map("demo_patient")
+}
+
+model DemoScan {
+  id          String        @id @default(cuid())
+  status      String        @default("link_sent") // link_sent | submitted | completed
+  imageUrls   Json?
+  result      Json?
+  createdAt   DateTime      @default(now())
+  submittedAt DateTime?
+  completedAt DateTime?
+
+  dentist     DemoDentist?  @relation(fields: [dentistId], references: [id])
+  dentistId   String?
+
+  patient     DemoPatient?  @relation(fields: [patientId], references: [id])
+  patientId   String?
+
+  // NEW: short links associated with this scan
+  links       DemoScanLink[]
+
+  @@map("demo_scan")
+}
+
+model DemoScanLink {
+  id        String      @id @default(cuid())
+  code      String      @unique        // e.g. "AB3F9X2K"
+  scan      DemoScan    @relation(fields: [scanId], references: [id])
+  scanId    String
+
+  dentistId String?
+  patientId String?
+
+  createdAt DateTime    @default(now())
+  expiresAt DateTime?
+
+  @@map("demo_scan_link")
 }

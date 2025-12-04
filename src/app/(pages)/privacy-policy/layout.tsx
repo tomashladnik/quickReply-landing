@@ -9,9 +9,10 @@ const PrivacyLayout = ({ children }: { children: ReactNode }) => {
   const navItems = [
     { name: "Disclaimer", href: "/privacy-policy/disclaimer" },
     { name: "Privacy Policy", href: "/privacy-policy" },
+    {name: "Terms & Conditions", href: "/privacy-policy/terms-and-conditions" },
     { name: "Cookie Policy", href: "/privacy-policy/cookie-policy" },
-    { name: "LLC Data Agreement", href: "/privacy-policy/llc-data-agreement" },
     { name: "LLC Sub-Processor", href: "/privacy-policy/llc-sub-processor" },
+    { name: "Data Processing Agreement", href: "/privacy-policy/llc-data-agreement" },
   ];
 
   const pathname = usePathname();

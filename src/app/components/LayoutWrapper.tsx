@@ -8,7 +8,12 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
   // Pages that should not show the main header/footer
-  const excludedPaths = ['/Dentalscandemo'];
+  const excludedPaths = [
+    '/Dentalscandemo',
+    '/sales',
+    '/patient-scan',
+    '/dentist-dashboard',
+  ];
   const shouldShowLayout = !excludedPaths.some(path => pathname.startsWith(path));
 
   if (!shouldShowLayout) {

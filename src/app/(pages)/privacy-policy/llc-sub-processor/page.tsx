@@ -2,145 +2,238 @@ const LLCSubProcessorAgreementPage = () => {
   return (
     <div className="prose prose-lg max-w-none">
       <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-        LLC Sub-Processor Agreement
+        Sub-Processor Agreement
       </h1>
-      <p className="text-sm text-gray-500">Last updated: April 23, 2025</p>
+      <p className="text-sm text-gray-500">Last updated: December 3, 2025</p>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900">Introduction</h2>
         <p>
-          This Sub-Processor Agreement (&quot;Agreement&quot;) governs the
-          relationship between ReplyQuick LLC (&quot;Company&quot;) and its
-          sub-processors in relation to the processing of personal data.
+          This Sub-Processor Agreement explains how ReplyQuick LLC (&quot;ReplyQuick&quot;, &quot;we&quot;, &quot;us&quot;, &quot;our&quot;) engages, manages, and oversees sub-processors who may process personal data on our behalf as part of delivering our services.
+        </p>
+        <p className="mt-4">
+          This document forms part of the ReplyQuick Data Processing Agreement (DPA) and applies to all processing activities conducted by third-party service providers that support our infrastructure, telephony capabilities, AI workflows, and platform operations.
         </p>
       </div>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900">Definitions</h2>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>
-            <strong>Sub-Processor:</strong> A third-party data processor engaged
-            by the Company to process personal data on behalf of the Company.
-          </li>
-          <li>
-            <strong>Personal Data:</strong> Any information relating to an
-            identified or identifiable natural person.
-          </li>
-          <li>
-            <strong>Processing:</strong> Any operation performed on personal
-            data, such as collection, storage, use, or disclosure.
-          </li>
-          <li>
-            <strong>Data Protection Laws:</strong> All applicable laws and
-            regulations relating to the processing of personal data.
-          </li>
+        <h2 className="text-2xl font-bold text-gray-900">
+          1. Definitions
+        </h2>
+        
+        <h3 className="mt-6 text-xl font-bold text-gray-900">
+          Sub-Processor
+        </h3>
+        <p>
+          A third-party entity engaged by ReplyQuick that processes personal data on our behalf.
+        </p>
+
+        <h3 className="mt-6 text-xl font-bold text-gray-900">
+          Personal Data
+        </h3>
+        <p>
+          Any information relating to an identified or identifiable individual, including names, phone numbers, images, user credentials, and usage data.
+        </p>
+
+        <h3 className="mt-6 text-xl font-bold text-gray-900">
+          Processing
+        </h3>
+        <p>
+          Any operation performed on personal data, such as collection, storage, transmission, analysis, or deletion.
+        </p>
+
+        <h3 className="mt-6 text-xl font-bold text-gray-900">
+          Data Protection Laws
+        </h3>
+        <p>
+          All applicable privacy laws, including but not limited to:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 mt-4">
+          <li>HIPAA (U.S. Health Insurance Portability and Accountability Act)</li>
+          <li>GDPR (EU General Data Protection Regulation)</li>
+          <li>CCPA/CPRA (California)</li>
+          <li>LGPD (Brazil)</li>
+          <li>PIPEDA/PHIPA (Canada)</li>
+          <li>Other relevant state, federal, and international frameworks</li>
         </ul>
       </div>
 
       <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-900">
-          Sub-Processor Obligations
+          2. General Obligations of Sub-Processors
         </h2>
-        <h3 className="mt-4 text-xl font-bold text-gray-900">
-          General Requirements
-        </h3>
-        <p>Sub-processors must:</p>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>
-            Process personal data only on documented instructions from the
-            Company
-          </li>
-          <li>
-            Ensure that persons authorized to process personal data have
-            committed themselves to confidentiality
-          </li>
-          <li>
-            Implement appropriate technical and organizational measures to
-            ensure security of processing
-          </li>
-          <li>
-            Assist the Company in ensuring compliance with data subject rights
-          </li>
-        </ul>
-        <h3 className="mt-4 text-xl font-bold text-gray-900">
-          Security Measures
-        </h3>
         <p>
-          Sub-processors must implement appropriate security measures,
-          including:
+          ReplyQuick requires all sub-processors to adhere to strict data protection standards. Each sub-processor must:
         </p>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>Encryption of personal data</li>
-          <li>Regular security testing and assessment</li>
-          <li>Access controls and authentication</li>
-          <li>Incident response procedures</li>
-        </ul>
+        <ol className="list-decimal pl-6 space-y-2 mt-4">
+          <li>Process personal data only based on instructions from ReplyQuick, as outlined in our DPA.</li>
+          <li>Maintain strict confidentiality and ensure their staff is trained and authorized to handle data securely.</li>
+          <li>
+            Implement industry-standard technical and organizational security measures, including:
+            <ul className="list-disc pl-6 space-y-2 mt-2">
+              <li>Encryption in transit and at rest</li>
+              <li>Access controls and authentication security</li>
+              <li>Regular security testing and monitoring</li>
+              <li>Secure data storage and transmission</li>
+            </ul>
+          </li>
+          <li>Notify ReplyQuick promptly of any suspected or confirmed data breach.</li>
+          <li>Cooperate with ReplyQuick to support compliance obligations, audits, and data subject rights requests.</li>
+        </ol>
       </div>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900">Data Transfers</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          3. Security & Technical Measures
+        </h2>
         <p>
-          Sub-processors may transfer personal data outside the jurisdiction
-          where it was collected only if:
+          All sub-processors must maintain robust security controls appropriate to the risks of processing personal data, including:
         </p>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>The transfer is necessary for the performance of the service</li>
-          <li>Appropriate safeguards are in place</li>
-          <li>The transfer complies with applicable data protection laws</li>
+        <ul className="list-disc pl-6 space-y-2 mt-4">
+          <li>Encryption technologies (TLS, AES-256, or better)</li>
+          <li>Role-based access controls</li>
+          <li>Secure development lifecycle</li>
+          <li>Logging and monitoring of system activity</li>
+          <li>Incident detection and response procedures</li>
+          <li>Business continuity and disaster recovery measures</li>
         </ul>
+        <p className="mt-4">
+          Sub-processors must provide security documentation or compliance attestations (SOC2, ISO27001, HITRUST, or equivalent) upon request.
+        </p>
       </div>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900">Audit Rights</h2>
-        <p>The Company has the right to:</p>
-        <ul className="list-disc pl-6 space-y-2">
+        <h2 className="text-2xl font-bold text-gray-900">
+          4. International Data Transfers
+        </h2>
+        <p>
+          Sub-processors may process data in jurisdictions outside those where data was originally collected only when:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 mt-4">
+          <li>Required for service delivery</li>
+          <li>Transfers comply with applicable laws</li>
           <li>
-            Conduct audits of sub-processors&apos; facilities and operations
+            Adequate legal safeguards are in place, such as:
+            <ul className="list-disc pl-6 space-y-2 mt-2">
+              <li>Standard Contractual Clauses (SCCs)</li>
+              <li>Adequacy decisions</li>
+              <li>HIPAA BAAs (where applicable)</li>
+              <li>LGPD-compliant instruments</li>
+            </ul>
           </li>
-          <li>Request documentation demonstrating compliance</li>
-          <li>Inspect security measures and processing activities</li>
+        </ul>
+        <p className="mt-4">
+          ReplyQuick ensures that all transfers maintain an equivalent level of protection.
+        </p>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900">
+          5. Audit & Compliance Oversight
+        </h2>
+        <p>
+          ReplyQuick retains the right to:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 mt-4">
+          <li>Review sub-processor security practices</li>
+          <li>Request documentation and certifications</li>
+          <li>Conduct assessments or audits where appropriate</li>
+          <li>Suspend or terminate a sub-processor that fails to meet required standards</li>
+        </ul>
+        <p className="mt-4">
+          Sub-processors must fully cooperate with any compliance review.
+        </p>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900">
+          6. Data Breach Notification
+        </h2>
+        <p>
+          Sub-processors must notify ReplyQuick without undue delay (usually within 24 hours) upon discovering a breach affecting personal data.
+        </p>
+        <p className="mt-4">
+          The notification must include:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 mt-4">
+          <li>Nature and scope of the breach</li>
+          <li>Data types affected</li>
+          <li>Number of impacted individuals (if known)</li>
+          <li>Measures taken or proposed to contain and mitigate the breach</li>
+          <li>Contact details for further follow-up</li>
+        </ul>
+        <p className="mt-4">
+          ReplyQuick will, in turn, notify affected customers in accordance with applicable laws.
+        </p>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900">
+          7. Termination & Data Return
+        </h2>
+        <p>
+          Upon termination of services, sub-processors must:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 mt-4">
+          <li>Immediately stop processing personal data</li>
+          <li>Return or delete all personal data in their possession</li>
+          <li>Provide written confirmation of deletion</li>
+          <li>Maintain confidentiality obligations indefinitely</li>
         </ul>
       </div>
 
       <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-900">
-          Data Breach Notification
+          8. Current List of Approved Sub-Processors
         </h2>
         <p>
-          Sub-processors must notify the Company without undue delay after
-          becoming aware of a personal data breach, providing:
+          The full list of third-party providers authorized to process data on behalf of ReplyQuick is maintained at:
         </p>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>Description of the nature of the breach</li>
-          <li>Categories and approximate number of data subjects affected</li>
-          <li>Measures taken or proposed to address the breach</li>
-          <li>Contact details for further information</li>
-        </ul>
-      </div>
-
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900">Termination</h2>
-        <p>Upon termination of the agreement, sub-processors must:</p>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>Return or delete all personal data</li>
-          <li>Provide certification of deletion</li>
-          <li>Maintain confidentiality obligations</li>
-        </ul>
-      </div>
-
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900">Contact Us</h2>
-        <p>
-          If you have any questions about this Sub-Processor Agreement, please
-          contact us:
-        </p>
-        <p>
-          By email:{" "}
+        <p className="mt-4">
           <a
-            href="mailto:Info@replyquick.ai"
+            href="https://replyquick.ai/subprocessors"
             className="text-blue-600 hover:underline"
           >
-            Info@replyquick.ai
+            replyquick.ai/subprocessors
+          </a>
+        </p>
+        <p className="mt-4">
+          This list includes:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 mt-4">
+          <li>Hosting providers</li>
+          <li>Telephony and SMS carriers</li>
+          <li>AI processing providers</li>
+          <li>Payment processors</li>
+          <li>Secure email and communications services</li>
+        </ul>
+        <p className="mt-4">
+          ReplyQuick will update the list prior to adding or removing a sub-processor.
+        </p>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900">
+          9. Governing Law
+        </h2>
+        <p>
+          This Agreement is governed by U.S. privacy law and relevant international data protection regulations, depending on the jurisdiction of the customer.
+        </p>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900">
+          10. Contact Us
+        </h2>
+        <p>
+          For questions regarding this Sub-Processor Agreement:
+        </p>
+        <p className="mt-4">
+          Email:{" "}
+          <a
+            href="mailto:info@replyquick.ai"
+            className="text-blue-600 hover:underline"
+          >
+            info@replyquick.ai
           </a>
         </p>
       </div>
