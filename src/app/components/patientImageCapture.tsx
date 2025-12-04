@@ -65,7 +65,7 @@ export default function PatientImageCapture({
     try {
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { exact: "user" },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
