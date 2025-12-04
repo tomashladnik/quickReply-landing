@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import PatientImageCapture from "@/app/components/patientImageCapture";
@@ -15,7 +15,7 @@ interface PatientData {
   status: string;
 }
 
-export default function PatientScanPage() {
+function PatientScanPageClient() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -345,5 +345,13 @@ export default function PatientScanPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function PatientScanPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <PatientScanPageClient />
+    </Suspense>
   );
 }
