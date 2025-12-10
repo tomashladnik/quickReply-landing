@@ -12,6 +12,7 @@ const Body = z.object({
   isMinor: z.boolean().optional(),
   consentMethod: z.enum(["school", "parent"]).optional(),
   hasSchoolConsentOnFile: z.boolean().optional(),
+  userId: z.string().optional(),
   images: z
     .array(
       z.object({
@@ -40,6 +41,10 @@ export async function POST(req: NextRequest) {
       images,
     } = parsed;
 
+    const userId = parsed.userId || "anon";
+    const flowFolder = flowType === "charity" ? "Charity" : "Gym";
+    const effectiveUserId = userId || "demo-user";
+
     if (!images || images.length === 0) {
       return NextResponse.json(
         { ok: false, error: "No images provided" },
@@ -47,7 +52,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Build list of image URLs (either direct URL or signed Supabase filePath)
     const imageUrls: { view: ViewType; url: string }[] = [];
 
     for (const item of images) {
@@ -80,33 +84,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🔁 Map upper/lower -> top/bottom **FOR ML SERVICE ONLY**
     const mlImages = imageUrls.map(({ view, url }) => ({
       view:
         view === "upper"
           ? "top"
           : view === "lower"
           ? "bottom"
-          : view, // front | left | right
+          : view, // front | left | right stay the same
       url,
     }));
 
-    // Debug log: what are we actually sending to ML?
     console.log("[MULTIUSE/SCAN] ML payload images:", mlImages);
 
     // Call ML service
     let mlJson: any = null;
     if (imageUrls.length > 0) {
-        const mlImages = imageUrls.map(({ view, url }) => ({
-        view:
-            view === "upper"
-                ? "top"
-                : view === "lower"
-                ? "bottom"
-                : view, // front | left | right stay the same
-        url,
-      }));
-
       const mlRes = await fetch(`${ML_BASE_URL}/v1/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,16 +113,16 @@ export async function POST(req: NextRequest) {
         const text = await mlRes.text().catch(() => "");
         console.error("[MULTIUSE/SCAN] ML error:", text);
         return NextResponse.json(
-        {
-          ok: false,
-          error: "ML service error",
-          details: text?.slice(0, 500),
-        },
-        { status: 502 }
+          {
+            ok: false,
+            error: "ML service error",
+            details: text?.slice(0, 500),
+          },
+          { status: 502 }
         );
-        }
+      }
 
-        mlJson = await mlRes.json();
+      mlJson = await mlRes.json();
     }
 
     // Store ML results in Supabase
@@ -138,7 +130,8 @@ export async function POST(req: NextRequest) {
     if (mlJson) {
       const now = new Date();
       const safeIso = now.toISOString().replace(/[:.]/g, "-");
-      jsonKey = `analysis/${scanId}/analysis-${safeIso}.json`;
+
+      jsonKey = `${flowFolder}/${scanId}/${effectiveUserId}/analysis-${safeIso}.json`;
 
       const { error } = await supabaseAdmin.storage
         .from(SUPABASE_BUCKET)
@@ -152,7 +145,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Very simple summary
     const summaryParts: string[] = [];
     if (mlJson?.overall_status) {
       summaryParts.push(`Overall status: ${mlJson.overall_status}`);

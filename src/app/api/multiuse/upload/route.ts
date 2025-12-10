@@ -1,62 +1,62 @@
-// src/app/api/multiuse/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase";
 
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
-
-// use a dedicated env just for this flow
-const MULTIUSE_BUCKET = process.env.SUPABASE_BUCKET || "MultiUseCase";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || "MultiUseCase";
 
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
-    const scanId = form.get("scanId");
-    const index = form.get("index");
-    const file = form.get("file");
+    const scanId = String(form.get("scanId") || "");
+    const indexRaw = form.get("index");
+    const file = form.get("file") as Blob | null;
+    const flowType = (form.get("flowType") as string) || "gym";
+    const userId = (form.get("userId") as string) || "demo-user";
 
-    if (!scanId || typeof scanId !== "string" || !(file instanceof Blob)) {
+    if (!scanId || !file) {
       return NextResponse.json(
         { ok: false, error: "Missing scanId or file" },
         { status: 400 }
       );
     }
 
-    const idx = typeof index === "string" ? Number(index) : 0;
-    const fileName = `view-${idx + 1}.jpg`;
-    const filePath = `${scanId}/${fileName}`;
+    const index = Number(indexRaw ?? 0);
+    const safeIndex = Number.isFinite(index) ? index : 0;
 
-    const { data, error } = await supabase.storage
-      .from(MULTIUSE_BUCKET)
-      .upload(filePath, file, {
+    const flowFolder = flowType === "charity" ? "Charity" : "Gym";
+    const fileName = `view-${safeIndex + 1}.jpg`;
+    const basePath = `${flowFolder}/${scanId}/${userId}`;
+    const filePath = `${basePath}/${fileName}`;
+
+    const arrayBuffer = await file.arrayBuffer();
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(SUPABASE_BUCKET)
+      .upload(filePath, Buffer.from(arrayBuffer), {
         contentType: "image/jpeg",
         upsert: true,
       });
 
-    if (error) {
-      console.error("Supabase upload error:", error);
+    if (uploadError) {
+      console.error("[MULTIUSE/UPLOAD] upload error", uploadError);
       return NextResponse.json(
-        { ok: false, error: error.message },
+        { ok: false, error: uploadError.message },
         { status: 500 }
       );
     }
 
-    const { data: publicData } = supabase
-      .storage
-      .from(MULTIUSE_BUCKET)
-      .getPublicUrl(data.path);
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from(SUPABASE_BUCKET)
+      .getPublicUrl(filePath);
 
     return NextResponse.json({
       ok: true,
-      url: publicData.publicUrl,
-      path: data.path,
+      url: publicUrlData.publicUrl,
+      filePath,
     });
   } catch (err: any) {
-    console.error("Upload route crash:", err);
+    console.error("[MULTIUSE/UPLOAD] error", err);
     return NextResponse.json(
-      { ok: false, error: err.message ?? "Unknown error" },
+      { ok: false, error: err?.message || "Internal error" },
       { status: 500 }
     );
   }

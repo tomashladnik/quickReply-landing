@@ -1,19 +1,26 @@
-import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+// src/lib/dental/multiuse/upload.ts
 
-const BUCKET = process.env.SUPABASE_BUCKET ?? "MultiUseCase";
-
-type UploadOpts = {
+type UploadParams = {
   scanId: string;
   index: number;
   blob: Blob;
+  flowType?: "gym" | "school" | "charity";
+  userId?: string;
 };
 
-export async function uploadMultiuseImage(opts: UploadOpts): Promise<string> {
+export async function uploadMultiuseImage({
+  scanId,
+  index,
+  blob,
+  flowType = "gym",
+  userId = "demo-user",
+}: UploadParams): Promise<string> {
   const form = new FormData();
-  form.append("scanId", opts.scanId);
-  form.append("index", String(opts.index));
-  form.append("file", opts.blob, `view-${opts.index + 1}.jpg`);
+  form.append("scanId", scanId);
+  form.append("index", String(index));
+  form.append("file", blob);
+  form.append("flowType", flowType);
+  form.append("userId", userId);
 
   const res = await fetch("/api/multiuse/upload", {
     method: "POST",
@@ -26,5 +33,9 @@ export async function uploadMultiuseImage(opts: UploadOpts): Promise<string> {
   }
 
   const data = await res.json();
+  if (!data.ok || !data.url) {
+    throw new Error("Upload failed: missing url in response");
+  }
+
   return data.url as string;
 }

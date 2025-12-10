@@ -336,6 +336,7 @@ export default function GymImageCapture({ token, onComplete, onBack }: GymImageC
 
     try {
       const scanId = `gym-${Date.now()}`;
+      const userId = token || 'demo-user';
 
       const images: { view: ViewType; url: string }[] = [];
 
@@ -347,6 +348,8 @@ export default function GymImageCapture({ token, onComplete, onBack }: GymImageC
           scanId,
           index: i,
           blob: slot.blob,
+          flowType: 'gym',
+          userId: token || 'demo-user',
         });
 
         images.push({
@@ -361,6 +364,7 @@ export default function GymImageCapture({ token, onComplete, onBack }: GymImageC
         body: JSON.stringify({
           flowType: 'gym',
           scanId,
+          userId: token || 'demo-user',
           images,
         }),
       });
@@ -385,7 +389,11 @@ export default function GymImageCapture({ token, onComplete, onBack }: GymImageC
 
   // Status message
   let statusMsg = 'Position face in circle';
-  if (isCapturing) {
+  if (captureMode === 'manual') {
+    statusMsg = 'Manual mode - tap capture';
+  } else if (autoCountdown !== null) {
+    statusMsg = `Get ready... ${autoCountdown}`;
+  } else if (isCapturing) {
     statusMsg = 'Capturing...';
   } else if (faceDetected && faceInCircle && mouthOpen) {
     statusMsg = 'Perfect! Hold still...';
