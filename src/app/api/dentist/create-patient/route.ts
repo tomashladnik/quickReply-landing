@@ -75,6 +75,19 @@ export async function POST(req: Request) {
     // Resolve dentist (demo default if none passed)
     let resolvedDentistId = dentistId ?? null;
 
+    // If dentistId provided, verify it exists
+    if (resolvedDentistId) {
+      const existingDentist = await prisma.demoDentist.findUnique({
+        where: { id: resolvedDentistId },
+      });
+      if (!existingDentist) {
+        return NextResponse.json(
+          { error: `Dentist with ID ${resolvedDentistId} not found` },
+          { status: 400 }
+        );
+      }
+    }
+
     if (!resolvedDentistId) {
       const existing = await prisma.demoDentist.findFirst({
         orderBy: { createdAt: "asc" },
