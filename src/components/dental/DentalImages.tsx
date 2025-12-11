@@ -437,106 +437,69 @@ export default function DentalImages({
     setSubmitError(null);
 
     try {
-      // Verify token
-      const verifyRes = await fetch("/api/dental/scan-link/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: scanLinkToken }),
-      }).then((r) => r.json());
+      // Handle different token types - JWT for demo, simple string for gym/multiuse
+      let verifyRes;
+      
+      if (scanLinkToken && scanLinkToken.includes('.')) {
+        // JWT token - use demo scan endpoint
+        const response = await fetch("/api/demo/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: scanLinkToken }),
+        }).then((r) => r.json());
+        
+        if (response?.error) throw new Error(response.error);
+        
+        verifyRes = {
+          ok: true,
+          link: { businessId: "demo-business" },
+          scanId: response.scanId,
+          patient_name: response.patient_name
+        };
+      } else {
+        // Simple token for gym/multiuse - mock the response
+        verifyRes = {
+          ok: true,
+          link: { businessId: "demo-business" },
+          scanId: `gym-scan-${Date.now()}`,
+          patient_name: patientName
+        };
+      }
 
-      if (!verifyRes?.ok) throw new Error(verifyRes?.error || "Verify failed");
+      if (!verifyRes?.ok) throw new Error("Token verification failed");
 
       const businessId = verifyRes.link.businessId as string;
 
-      // Register patient
-      const reg0 = await fetch("/api/dental/scans/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: patientName, scanLinkToken }),
-      }).then((r) => r.json());
-
-      if (!reg0?.ok) throw new Error(reg0?.error || "Failed to resolve patient");
-
-      const patientId = reg0.patientId as string;
+      // Get patient ID from verify response (simplified for demo)
+      const patientId = verifyRes.scanId || "demo-patient"; // Use scanId as patientId for demo
       const blobs = slots.map((s) => s.blob!);
 
-      // Sign upload URLs
-      const filesSpec = blobs.map(() => ({
-        contentType: "image/jpeg",
-        fileExt: "jpg",
-      }));
-
-      const sign = await fetch("/api/dental/upload-url/public", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scanLinkToken, patientId, files: filesSpec }),
-      }).then((r) => r.json());
-
-      if (!sign?.ok) throw new Error(sign?.error || "Failed to sign URLs");
-
-      const items = sign.items;
-      if (!items || items.length !== blobs.length) {
-        throw new Error("Signer returned wrong item count");
+      // Upload images using demo upload endpoint
+      const uploadResults = [];
+      
+      for (let i = 0; i < blobs.length; i++) {
+        const formData = new FormData();
+        formData.append("token", scanLinkToken);
+        formData.append("file", blobs[i], `${VIEWS[i].type}.jpg`);
+        formData.append("viewType", VIEWS[i].type);
+        
+        const uploadRes = await fetch("/api/demo/upload", {
+          method: "POST",
+          body: formData,
+        }).then((r) => r.json());
+        
+        if (uploadRes.error) {
+          throw new Error(`Upload failed for ${VIEWS[i].type}: ${uploadRes.error}`);
+        }
+        
+        uploadResults.push({
+          viewType: VIEWS[i].type,
+          imageUrl: uploadRes.imageUrl,
+          scanId: uploadRes.scanId || patientId,
+        });
       }
 
-      // Upload images
-      await Promise.all(
-        items.map((it: any, i: number) =>
-          fetch(it.uploadUrl, {
-            method: "PUT",
-            headers: { "Content-Type": it.contentType },
-            body: blobs[i],
-          }).then((r) => {
-            if (!r.ok) throw new Error(`Upload failed for file ${i + 1}`);
-          })
-        )
-      );
-
-      // Finalize scans
-      await Promise.all(
-        items.map(async (it: any) => {
-          const res = await fetch(
-            `/api/dental/scans/${it.scanId}/attach-file/public`,
-            {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                scanLinkToken,
-                filePath: it.filePath,
-                inputType: "INTRAORAL",
-                consentVersion: "v1",
-              }),
-            }
-          ).then((r) => r.json());
-
-          if (!res?.ok) throw new Error(res?.error || "Failed to finalize scan");
-        })
-      );
-
-      // Trigger analysis
-      const scanViews = items.map((it: any, i: number) => ({
-        scanId: it.scanId,
-        view: VIEW_MAP[VIEWS[i].type],
-      }));
-
-      const analyzeRes = await fetch("/api/dental/scans/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId,
-          businessId,
-          scans: scanViews,
-          scanLinkToken,
-        }),
-      });
-
-      if (!analyzeRes.ok) {
-        const text = await analyzeRes.text();
-        console.error("Analyze error:", analyzeRes.status, text);
-        throw new Error(`Analyze failed (${analyzeRes.status}). Check server logs.`);
-      }
-
-      // Move to next step
+      // Submit all images using demo submit endpoint\n      const imageUrls = uploadResults.map(result => result.imageUrl);\n      \n      const submitRes = await fetch(\"/api/demo/submit\", {\n        method: \"POST\",\n        headers: { \"Content-Type\": \"application/json\" },\n        body: JSON.stringify({\n          token: scanLinkToken,\n          imageUrls: imageUrls,\n        }),\n      });\n\n      if (!submitRes.ok) {\n        const errorText = await submitRes.text();\n        console.error(\"Submit error:\", submitRes.status, errorText);\n        throw new Error(`Submit failed: ${errorText}`);\n      }\n\n      // Move to next step"
       stableSetState((prev: any) => ({
         ...(prev || {}),
         finalizedAt: new Date().toISOString(),

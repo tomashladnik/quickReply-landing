@@ -31,26 +31,52 @@ export async function POST(req: Request) {
     }
 
     let payload: DemoTokenPayload;
-    try {
-      payload = jwt.verify(token, DEMO_SECRET) as DemoTokenPayload;
-    } catch (err) {
-      console.error("[DEMO_UPLOAD] invalid token", err);
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
+    let scanId: string;
+    
+    if (token.includes('.')) {
+      // JWT token - verify normally
+      try {
+        payload = jwt.verify(token, DEMO_SECRET) as DemoTokenPayload;
+        scanId = payload.scanId;
+      } catch (err) {
+        console.error("[DEMO_UPLOAD] invalid JWT token", err);
+        return NextResponse.json(
+          { error: "Invalid or expired token" },
+          { status: 401 }
+        );
+      }
+    } else {
+      // Simple string token for gym/multiuse - create mock payload
+      scanId = `gym-scan-${Date.now()}`;
+      payload = {
+        scanId: scanId,
+        dentistDemoId: "gym-demo",
+        patientId: "gym-patient"
+      };
     }
 
-    const scanId = payload.scanId;
-    const scan = await prisma.demoScan.findUnique({ where: { id: scanId } });
-
-    if (!scan) {
-      return NextResponse.json({ error: "Scan not found" }, { status: 404 });
+    // For JWT tokens, validate scan exists; for simple tokens, create mock
+    let scan: any;
+    if (token.includes('.')) {
+      scan = await prisma.demoScan.findUnique({ where: { id: scanId } });
+      if (!scan) {
+        return NextResponse.json({ error: "Scan not found" }, { status: 404 });
+      }
+    } else {
+      // Mock scan for gym/multiuse flows
+      scan = {
+        id: scanId,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        imageUrls: [],
+        submittedAt: null
+      };
     }
 
-    // Single image + label per request
-    const image = formData.get("image");
-    const labelField = formData.get("label");
+    // Get the file - check for different field names
+    const image = formData.get("file") || formData.get("image");
+    const labelField = formData.get("viewType") || formData.get("label");
     const label =
       typeof labelField === "string" && labelField.trim()
         ? labelField.toLowerCase()
@@ -69,14 +95,13 @@ export async function POST(req: Request) {
 
     // Folder structure:
     // dental-demo/<dentist-demo-id>/<patient-id>/<label>.jpg
-    const anyScan: any = scan;
     const dentistFolder =
       payload.dentistDemoId ||
-      anyScan.dentistDemoId ||
-      anyScan.dentistId ||
+      scan.dentistDemoId ||
+      scan.dentistId ||
       "unknown-dentist";
     const patientFolder =
-      payload.patientId || anyScan.patientId || scanId;
+      payload.patientId || scan.patientId || scanId;
 
     const filePath = `${dentistFolder}/${patientFolder}/${label}.${ext}`;
 
@@ -101,29 +126,41 @@ export async function POST(req: Request) {
       .from(SUPABASE_DEMO_BUCKET)
       .getPublicUrl(filePath);
 
-    // Append URL to existing imageUrls
-    const existingUrls =
-      scan.imageUrls && Array.isArray(scan.imageUrls)
-        ? (scan.imageUrls as string[])
-        : [];
-    const updatedUrls = [...existingUrls, publicUrl];
+    // For JWT tokens, update database; for simple tokens, just return success
+    if (token.includes('.')) {
+      // Append URL to existing imageUrls
+      const existingUrls =
+        scan.imageUrls && Array.isArray(scan.imageUrls)
+          ? (scan.imageUrls as string[])
+          : [];
+      const updatedUrls = [...existingUrls, publicUrl];
 
-    const now = new Date();
+      const now = new Date();
 
-    await prisma.demoScan.update({
-      where: { id: scanId },
-      data: {
+      await prisma.demoScan.update({
+        where: { id: scanId },
+        data: {
+          imageUrls: updatedUrls,
+          status: "submitted",
+          submittedAt: scan.submittedAt ?? now,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        imageUrl: publicUrl,
         imageUrls: updatedUrls,
-        status: "submitted",
-        submittedAt: scan.submittedAt ?? now,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      imageUrl: publicUrl,
-      imageUrls: updatedUrls,
-    });
+        scanId: scanId
+      });
+    } else {
+      // Simple token flow - just return success without database update
+      return NextResponse.json({
+        success: true,
+        imageUrl: publicUrl,
+        imageUrls: [publicUrl],
+        scanId: scanId
+      });
+    }
   } catch (err) {
     console.error("[DEMO_UPLOAD] error", err);
     return NextResponse.json(
