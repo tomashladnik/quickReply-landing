@@ -92,17 +92,70 @@ export async function POST(req: Request) {
         });
         resolvedDentistId = created.id;
       }
+    } else {
+      // Validate that the provided dentistId exists
+      console.log(`[CREATE_PATIENT] Checking dentist existence for ID: ${resolvedDentistId}`);
+      
+      const dentistExists = await prisma.demoDentist.findUnique({
+        where: { id: resolvedDentistId },
+      });
+      
+      console.log(`[CREATE_PATIENT] Dentist exists:`, dentistExists ? 'YES' : 'NO');
+      
+      if (!dentistExists) {
+        console.log(`[CREATE_PATIENT] Dentist not found, falling back to demo dentist`);
+        
+        // Instead of failing, fall back to finding or creating a demo dentist
+        const existing = await prisma.demoDentist.findFirst({
+          orderBy: { createdAt: "asc" },
+        });
+
+        if (existing) {
+          resolvedDentistId = existing.id;
+          console.log(`[CREATE_PATIENT] Using existing demo dentist: ${resolvedDentistId}`);
+        } else {
+          const created = await prisma.demoDentist.create({
+            data: {
+              name: "Demo Dentist",
+              email: null,
+              phone: null,
+            },
+          });
+          resolvedDentistId = created.id;
+          console.log(`[CREATE_PATIENT] Created new demo dentist: ${resolvedDentistId}`);
+        }
+      }
+    }
+
+    // Ensure we have a valid dentist ID before proceeding
+    if (!resolvedDentistId) {
+      return NextResponse.json(
+        { error: "Failed to resolve dentist ID" },
+        { status: 500 }
+      );
     }
 
     // 1) Create DemoPatient
-    const patient = await prisma.demoPatient.create({
-      data: {
-        name,
-        phone,
-        email,
-        dentistId: resolvedDentistId,
-      },
-    });
+    console.log(`[CREATE_PATIENT] Creating patient with dentistId: ${resolvedDentistId}`);
+    
+    let patient;
+    try {
+      patient = await prisma.demoPatient.create({
+        data: {
+          name,
+          phone,
+          email,
+          dentistId: resolvedDentistId,
+        },
+      });
+      console.log(`[CREATE_PATIENT] Patient created successfully: ${patient.id}`);
+    } catch (error) {
+      console.error('Failed to create DemoPatient:', error);
+      return NextResponse.json(
+        { error: 'Failed to create patient record', details: error },
+        { status: 500 }
+      );
+    }
 
     // 2) Create DemoScan (link_sent)
     const scan = await prisma.demoScan.create({
