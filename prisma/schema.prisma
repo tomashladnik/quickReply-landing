@@ -89,7 +89,7 @@ model DemoScanLink {
   @@map("demo_scan_link")
 }
 
-model Scan {
+model MultiuseScan {
   id                   String    @id @default(dbgenerated("gen_random_uuid()::text")) @db.Text
   demoScanId           String?   @map("demo_scan_id") @db.Text
   patientName          String?   @map("patient_name") @db.Text
@@ -131,5 +131,5 @@ model Scan {
   @@index([createdAt], map: "scans_created_at_idx")
   @@index([reportDeliveryStatus], map: "scans_report_delivery_status_idx")
   @@index([schoolLevel], map: "scans_school_level_idx")
-  @@map("scans")
+  @@map("multiuse_scans_demo")
 }
