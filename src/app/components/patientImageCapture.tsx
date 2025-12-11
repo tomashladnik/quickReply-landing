@@ -269,6 +269,7 @@ export default function PatientImageCapture({
               playsInline
               muted
               className="w-full h-full object-cover"
+              style={{ transform: 'scaleX(-1)' }}
             />
             <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-[10px] sm:text-xs font-medium">
               {label}

@@ -74,15 +74,35 @@ export async function POST(req: Request) {
 
     // Resolve dentist (demo default if none passed)
     let resolvedDentistId = dentistId ?? null;
+    
+    console.log("Received dentistId:", dentistId);
+    console.log("Resolved dentistId:", resolvedDentistId);
 
     // If dentistId provided, verify it exists
     if (resolvedDentistId) {
+      console.log("Checking for dentist with ID:", resolvedDentistId);
       const existingDentist = await prisma.demoDentist.findUnique({
         where: { id: resolvedDentistId },
       });
+      console.log("Found dentist:", existingDentist ? "yes" : "no");
       if (!existingDentist) {
+        console.log("Dentist not found with exact ID, checking for any dentist with similar pattern");
+        // Try to find a dentist by partial match or by phone if available
+        const allDentists = await prisma.demoDentist.findMany({
+          take: 10,
+          orderBy: { createdAt: "desc" }
+        });
+        console.log("Recent dentists:", allDentists.map(d => ({ id: d.id, phone: d.phone })));
+        
         return NextResponse.json(
-          { error: `Dentist with ID ${resolvedDentistId} not found` },
+          { 
+            error: `Dentist with ID ${resolvedDentistId} not found`,
+            debug: {
+              receivedId: dentistId,
+              resolvedId: resolvedDentistId,
+              recentDentists: allDentists.map(d => ({ id: d.id, phone: d.phone }))
+            }
+          },
           { status: 400 }
         );
       }
