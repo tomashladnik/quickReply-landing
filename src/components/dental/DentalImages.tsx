@@ -437,11 +437,15 @@ export default function DentalImages({
     setSubmitError(null);
 
     try {
-      // Handle different token types - JWT for demo, simple string for gym/multiuse
+      // Detect flow type based on token format
+      const isJWTToken = scanLinkToken && scanLinkToken.includes('.');
+      const isDentalDemo = isJWTToken;
+      const isMultiuseCase = !isJWTToken;
+
       let verifyRes;
       
-      if (scanLinkToken && scanLinkToken.includes('.')) {
-        // JWT token - use demo scan endpoint
+      if (isDentalDemo) {
+        // JWT token - use dental demo endpoints
         const response = await fetch("/api/demo/scan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -457,49 +461,125 @@ export default function DentalImages({
           patient_name: response.patient_name
         };
       } else {
-        // Simple token for gym/multiuse - mock the response
+        // Simple token for multiuse cases
         verifyRes = {
           ok: true,
-          link: { businessId: "demo-business" },
-          scanId: `gym-scan-${Date.now()}`,
+          link: { businessId: "multiuse-business" },
+          scanId: scanLinkToken,
           patient_name: patientName
         };
       }
 
       if (!verifyRes?.ok) throw new Error("Token verification failed");
 
-      const businessId = verifyRes.link.businessId as string;
-
-      // Get patient ID from verify response (simplified for demo)
-      const patientId = verifyRes.scanId || "demo-patient"; // Use scanId as patientId for demo
+      const patientId = verifyRes.scanId || "demo-patient";
       const blobs = slots.map((s) => s.blob!);
-
-      // Upload images using demo upload endpoint
       const uploadResults = [];
       
+      // Upload images using appropriate endpoint
       for (let i = 0; i < blobs.length; i++) {
         const formData = new FormData();
-        formData.append("token", scanLinkToken);
-        formData.append("file", blobs[i], `${VIEWS[i].type}.jpg`);
-        formData.append("viewType", VIEWS[i].type);
         
-        const uploadRes = await fetch("/api/demo/upload", {
-          method: "POST",
-          body: formData,
-        }).then((r) => r.json());
-        
-        if (uploadRes.error) {
-          throw new Error(`Upload failed for ${VIEWS[i].type}: ${uploadRes.error}`);
+        if (isDentalDemo) {
+          // Dental demo upload
+          formData.append("token", scanLinkToken);
+          formData.append("file", blobs[i], `${VIEWS[i].type}.jpg`);
+          formData.append("viewType", VIEWS[i].type);
+          
+          const uploadRes = await fetch("/api/demo/upload", {
+            method: "POST",
+            body: formData,
+          }).then((r) => r.json());
+          
+          if (uploadRes.error) {
+            throw new Error(`Upload failed for ${VIEWS[i].type}: ${uploadRes.error}`);
+          }
+          
+          uploadResults.push({
+            viewType: VIEWS[i].type,
+            imageUrl: uploadRes.imageUrl,
+            scanId: uploadRes.scanId || patientId,
+          });
+        } else {
+          // Multiuse upload
+          formData.append("scanId", scanLinkToken);
+          formData.append("index", i.toString());
+          formData.append("file", blobs[i], `${VIEWS[i].type}-${i + 1}.jpg`);
+          
+          const uploadRes = await fetch("/api/multiuse/upload", {
+            method: "POST",
+            body: formData,
+          }).then((r) => r.json());
+          
+          if (!uploadRes.ok) {
+            throw new Error(uploadRes.error || `Upload failed for ${VIEWS[i].type}`);
+          }
+          
+          uploadResults.push({
+            viewType: VIEWS[i].type,
+            imageUrl: uploadRes.url,
+            scanId: scanLinkToken,
+          });
         }
-        
-        uploadResults.push({
-          viewType: VIEWS[i].type,
-          imageUrl: uploadRes.imageUrl,
-          scanId: uploadRes.scanId || patientId,
-        });
       }
 
-      // Submit all images using demo submit endpoint\n      const imageUrls = uploadResults.map(result => result.imageUrl);\n      \n      const submitRes = await fetch(\"/api/demo/submit\", {\n        method: \"POST\",\n        headers: { \"Content-Type\": \"application/json\" },\n        body: JSON.stringify({\n          token: scanLinkToken,\n          imageUrls: imageUrls,\n        }),\n      });\n\n      if (!submitRes.ok) {\n        const errorText = await submitRes.text();\n        console.error(\"Submit error:\", submitRes.status, errorText);\n        throw new Error(`Submit failed: ${errorText}`);\n      }\n\n      // Move to next step"
+      // Submit all images using appropriate endpoint
+      if (isDentalDemo) {
+        const imageUrls = uploadResults.map(result => result.imageUrl);
+        
+        const submitRes = await fetch("/api/demo/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: scanLinkToken,
+            imageUrls: imageUrls,
+          }),
+        });
+
+        if (!submitRes.ok) {
+          const errorText = await submitRes.text();
+          console.error("Submit error:", submitRes.status, errorText);
+          throw new Error(`Submit failed: ${errorText}`);
+        }
+      } else {
+        // For multiuse cases, fetch user info and send result via SMS
+        const userInfoRes = await fetch(`/api/multiuse/user-info?userId=${scanLinkToken}`);
+        
+        if (!userInfoRes.ok) {
+          const errorData = await userInfoRes.json();
+          throw new Error(errorData.error || 'Failed to fetch user information');
+        }
+        
+        const user = await userInfoRes.json();
+        
+        if (!user.name || !user.phone) {
+          throw new Error('User information incomplete - missing name or phone');
+        }
+        
+        const resultRes = await fetch("/api/multiuse/send-result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: scanLinkToken,
+            phone: user.phone,
+            name: user.name,
+            flowType: user.flowType,
+            result: {
+              currentStatus: 'Assessment completed',
+              recommendedPlan: 'Personalized fitness plan based on photos',
+              progressScore: 'Available in app'
+            }
+          }),
+        });
+
+        if (!resultRes.ok) {
+          const errorText = await resultRes.text();
+          console.error("Result send error:", resultRes.status, errorText);
+          throw new Error(`Failed to send result: ${errorText}`);
+        }
+      }
+
+      // Move to next step
       stableSetState((prev: any) => ({
         ...(prev || {}),
         finalizedAt: new Date().toISOString(),
@@ -516,13 +596,13 @@ export default function DentalImages({
   const status = getStatusMessage();
 
   return (
-    <div className="w-full max-w-lg mx-auto p-4 md:p-8 bg-white rounded-2xl shadow-lg space-y-6 border border-blue-100">
+    <div className="w-full max-w-lg mx-auto p-4 md:p-8 bg-white rounded-2xl shadow-lg space-y-6 border border-blue-100 overflow-hidden">
       {/* Header - Specification Compliant */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-blue-700 mb-1">
+      <div className="bg-sky-400 text-white p-6 md:p-8 text-center -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-6">
+        <h2 className="text-2xl font-bold mb-1">
           DentalScan
         </h2>
-        <p className="text-sm text-blue-500 mb-4">
+        <p className="text-sm text-sky-100 mb-0">
           Step {currentStep + 1} of 5 – {currentView.label}
         </p>
       </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import DentalImages from '@/components/dental/DentalImages';
 
-export default function GymCapturePage() {
+export default function CharityCapturePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
@@ -22,7 +22,7 @@ export default function GymCapturePage() {
     // Check if required parameters are present
     if (!token || !userId) {
       console.error('Missing required parameters:', { token, userId });
-      router.push('/multiusecase/register?type=gym');
+      router.push('/multiusecase/register?type=charity');
       return;
     }
     
@@ -51,11 +51,11 @@ export default function GymCapturePage() {
 
   const handleComplete = () => {
     // Navigate to result page after successful capture
-    router.push(`/multiusecase/gym/result?token=${token}&userId=${userId}`);
+    router.push(`/multiusecase/charity/result?token=${token}&userId=${userId}`);
   };
 
   const handleBack = () => {
-    router.push(`/multiusecase/register?type=gym&token=${token}`);
+    router.push(`/multiusecase/register?type=charity&token=${token}`);
   };
 
   // Show loading or redirect if parameters are missing

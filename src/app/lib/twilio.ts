@@ -3,7 +3,7 @@ import Twilio from "twilio";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || ""; // e.g. "+18445551234"
+const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_PHONE_NUMBER || ""; // e.g. "+18445551234"
 
 let twilioClient: Twilio.Twilio | null = null;
 

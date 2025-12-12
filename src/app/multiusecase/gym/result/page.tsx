@@ -1,12 +1,88 @@
 'use client';
 
-import { useState } from 'react';
-import { Clock, Info, MapPin, Phone, Sparkles, Award, Calendar, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Clock, Info, MapPin, Phone, Sparkles, Award, Calendar, TrendingUp, Send, CheckCircle } from 'lucide-react';
 
 export default function GymResultPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token') || '';
+  const userId = searchParams.get('userId') || '';
+  
   const [currentShade, setCurrentShade] = useState('B3');
   const [idealShade, setIdealShade] = useState('A1');
   const [activeTarget, setActiveTarget] = useState<'current' | 'ideal'>('current');
+  const [smsStatus, setSmsStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [userInfo, setUserInfo] = useState<{name: string, phone: string} | null>(null);
+
+  // Fetch user information and auto-send SMS
+  useEffect(() => {
+    if (userId) {
+      fetchUserInfoAndSendSMS();
+    }
+  }, [userId]);
+
+  const fetchUserInfoAndSendSMS = async () => {
+    try {
+      // Fetch user information from database
+      const response = await fetch(`/api/multiuse/user-info?userId=${userId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user info');
+      }
+      
+      const userData = await response.json();
+      
+      if (userData.name && userData.phone) {
+        const userInfo = {
+          name: userData.name,
+          phone: userData.phone
+        };
+        
+        setUserInfo(userInfo);
+        
+        // Auto-send SMS with results
+        await sendResultsViaSMS(userInfo);
+      }
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      setSmsStatus('error');
+    }
+  };
+
+  const sendResultsViaSMS = async (user: {name: string, phone: string}) => {
+    setSmsStatus('sending');
+    
+    try {
+      const result = {
+        currentStatus: 'Fitness Level B3',
+        recommendedPlan: '12-week transformation',
+        progressScore: '7.5/10'
+      };
+
+      const response = await fetch('/api/multiuse/send-result', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          phone: user.phone,
+          name: user.name,
+          result
+        }),
+      });
+
+      if (response.ok) {
+        setSmsStatus('sent');
+      } else {
+        throw new Error('Failed to send SMS');
+      }
+    } catch (error) {
+      console.error('SMS sending error:', error);
+      setSmsStatus('error');
+    }
+  };
 
   const shadeScale = [
     { code: 'A1', tone: 'Brilliant pearl', color: '#FDFAF5' },
@@ -70,6 +146,39 @@ export default function GymResultPage() {
             </div>
           </div>
         </div>
+
+        {/* SMS Status Banner */}
+        {smsStatus !== 'idle' && (
+          <div className={`border-2 rounded-2xl p-6 shadow-lg ${
+            smsStatus === 'sent' ? 'bg-blue-50 border-blue-200' :
+            smsStatus === 'sending' ? 'bg-yellow-50 border-yellow-200' :
+            'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
+                smsStatus === 'sent' ? 'bg-blue-500' :
+                smsStatus === 'sending' ? 'bg-yellow-500' :
+                'bg-red-500'
+              }`}>
+                {smsStatus === 'sent' ? <CheckCircle className="w-6 h-6 text-white" /> :
+                 smsStatus === 'sending' ? <Send className="w-6 h-6 text-white animate-pulse" /> :
+                 <Phone className="w-6 h-6 text-white" />}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900">
+                  {smsStatus === 'sent' ? 'Results Sent! 📱' :
+                   smsStatus === 'sending' ? 'Sending Results...' :
+                   'SMS Failed'}
+                </h3>
+                <p className="text-gray-700">
+                  {smsStatus === 'sent' ? 'Your fitness results have been sent to your phone via SMS.' :
+                   smsStatus === 'sending' ? 'We\'re sending your results to your phone...' :
+                   'Failed to send SMS to your phone.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Current vs Ideal Comparison */}
         <section className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
