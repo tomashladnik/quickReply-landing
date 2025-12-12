@@ -16,6 +16,9 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     '/multiusecase/gym/capture',
     '/multiusecase/gym/result',
     '/multiusecase/register',
+    '/multiusecase/charity',
+    '/multiusecase/school',
+    '/qr-demo',
   ];
   const shouldShowLayout = !excludedPaths.some(path => pathname.startsWith(path));
 

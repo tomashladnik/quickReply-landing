@@ -417,7 +417,7 @@ export default function DentalImages({
     }
     if (guardrail?.countdown > 0) return { text: `Hold still... capturing in ${guardrail.countdown}`, color: 'bg-green-100 text-green-700' };
     if (guardrail?.readyToCapture) return { text: "Capturing now!", color: 'bg-green-100 text-green-700' };
-    return { text: "Position yourself in the circle", color: 'bg-blue-100 text-blue-700' };
+    return { text: "Position yourself in the circle", color: 'bg-sky-100 text-sky-700' };
   };
 
   // Manual capture handler
@@ -476,6 +476,25 @@ export default function DentalImages({
       const blobs = slots.map((s) => s.blob!);
       const uploadResults = [];
       
+      // For multiuse cases, get user data first to access flowType
+      let userData;
+      if (isMultiuseCase) {
+        const userInfoRes = await fetch(`/api/multiuse/user-info?userId=${scanLinkToken}`);
+        
+        if (!userInfoRes.ok) {
+          const errorData = await userInfoRes.json();
+          throw new Error(errorData.error || 'Failed to fetch user information');
+        }
+        
+        const user = await userInfoRes.json();
+        userData = user.user || user;
+        
+        if (!userData.name || !userData.phone) {
+          console.error('DentalImages: Missing user data:', userData);
+          throw new Error('User information incomplete - missing name or phone');
+        }
+      }
+      
       // Upload images using appropriate endpoint
       for (let i = 0; i < blobs.length; i++) {
         const formData = new FormData();
@@ -505,6 +524,7 @@ export default function DentalImages({
           formData.append("scanId", scanLinkToken);
           formData.append("index", i.toString());
           formData.append("file", blobs[i], `${VIEWS[i].type}-${i + 1}.jpg`);
+          formData.append("flowType", userData.flowType || "gym");
           
           const uploadRes = await fetch("/api/multiuse/upload", {
             method: "POST",
@@ -542,28 +562,15 @@ export default function DentalImages({
           throw new Error(`Submit failed: ${errorText}`);
         }
       } else {
-        // For multiuse cases, fetch user info and send result via SMS
-        const userInfoRes = await fetch(`/api/multiuse/user-info?userId=${scanLinkToken}`);
-        
-        if (!userInfoRes.ok) {
-          const errorData = await userInfoRes.json();
-          throw new Error(errorData.error || 'Failed to fetch user information');
-        }
-        
-        const user = await userInfoRes.json();
-        
-        if (!user.name || !user.phone) {
-          throw new Error('User information incomplete - missing name or phone');
-        }
-        
+        // For multiuse cases, send result via SMS using previously fetched userData
         const resultRes = await fetch("/api/multiuse/send-result", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: scanLinkToken,
-            phone: user.phone,
-            name: user.name,
-            flowType: user.flowType,
+            phone: userData.phone,
+            name: userData.name,
+            flowType: userData.flowType,
             result: {
               currentStatus: 'Assessment completed',
               recommendedPlan: 'Personalized fitness plan based on photos',
@@ -725,7 +732,7 @@ export default function DentalImages({
               
               {/* Enhanced Status Messages */}
               {!faceDetection?.error && guardrail && (
-                <div className="absolute bottom-2 left-2 right-2 bg-blue-600/90 text-white px-3 py-2 rounded text-sm z-20">
+                <div className="absolute bottom-2 left-2 right-2 bg-sky-500/90 text-white px-3 py-2 rounded text-sm z-20">
                   <div className="font-medium">
                     {faceDetection?.result?.multipleFacesDetected && (
                       <span className="text-yellow-300">⚠️ Multiple faces detected - </span>
@@ -760,7 +767,7 @@ export default function DentalImages({
           <button
             onClick={handleManualCapture}
             disabled={autoCapturing}
-            className="w-full py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg font-medium"
+            className="w-full py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-gray-400 text-white rounded-lg font-medium"
           >
             {autoCapturing ? 'Capturing...' : '📸 Capture Photo'}
           </button>
@@ -789,21 +796,21 @@ export default function DentalImages({
               onClick={() => setCurrentStep(i)}
               className={`relative w-14 rounded-lg border-2 p-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 ${
                 isCurrent
-                  ? "border-blue-600 bg-blue-50"
+                  ? "border-sky-600 bg-sky-50"
                   : isFilled
                   ? "border-green-500 bg-green-50"
-                  : "border-blue-200 bg-white"
+                  : "border-sky-200 bg-white"
               }`}
             >
-              <div className="text-[10px] mb-0.5 font-medium text-center truncate text-blue-700">
+              <div className="text-[10px] mb-0.5 font-medium text-center truncate text-sky-700">
                 {view.type.charAt(0).toUpperCase() + view.type.slice(1)}
               </div>
-              <div className="aspect-3/4 w-full overflow-hidden rounded border border-blue-100 bg-blue-50">
+              <div className="aspect-3/4 w-full overflow-hidden rounded border border-sky-100 bg-sky-50">
                 {s?.preview ? (
                   <img src={s.preview} alt={view.label} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-blue-300 text-lg">📷</span>
+                    <span className="text-sky-300 text-lg">📷</span>
                   </div>
                 )}
               </div>
@@ -837,7 +844,7 @@ export default function DentalImages({
       <div className="mt-6 flex flex-col md:flex-row gap-3 md:justify-between">
         <button
           onClick={onBack}
-          className="w-full md:w-auto px-4 py-2 rounded-lg border border-blue-200 bg-white text-blue-700 font-semibold shadow-sm hover:bg-blue-50 transition"
+          className="w-full md:w-auto px-4 py-2 rounded-lg border border-sky-200 bg-white text-sky-700 font-semibold shadow-sm hover:bg-sky-50 transition"
         >
           Back
         </button>
@@ -846,7 +853,7 @@ export default function DentalImages({
           disabled={!canSubmit || submitting}
           className={`w-full md:w-auto px-4 py-2 rounded-lg font-semibold shadow-sm transition text-white ${
             !canSubmit || submitting
-              ? "bg-blue-200 cursor-not-allowed"
+              ? "bg-sky-200 cursor-not-allowed"
               : "bg-green-600 hover:bg-green-700"
           }`}
         >

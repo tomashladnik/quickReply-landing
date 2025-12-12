@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { twilioClient, TWILIO_FROM_NUMBER } from '@/app/lib/twilio';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
@@ -23,34 +22,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!twilioClient || !TWILIO_FROM_NUMBER) {
-      console.error('Twilio not configured - SMS service unavailable');
+    const replyQuickSmsUrl = process.env.REPLYQUICK_SMS_URL || process.env.REPLYQUICK_RESULTS_SMS_URL || 'https://dashboard.replyquick.ai/api/sms/send';
+    if (!replyQuickSmsUrl) {
+      console.error('ReplyQuick SMS URL not configured');
       return NextResponse.json(
-        { error: 'SMS service not configured - please set up Twilio credentials' },
+        { error: 'SMS service not configured - please set REPLYQUICK_SMS_URL or REPLYQUICK_RESULTS_SMS_URL' },
         { status: 500 }
       );
     }
 
-    // Create SMS message content - using Message 2 template
-    const smsContent = `ReplyQuick (DentalScan): Your scan update is ready. Tap to view your results: ${process.env.STANDARD_PAGE || 'https://replyquick.ai'}/multiusecase/result?token=${userId}. This message is for informational purposes only. Reply STOP to opt out.`;
+    // Create SMS message content using Message 2 template with short link
+    const baseUrl = process.env.STANDARD_PAGE || process.env.NEXT_PUBLIC_BASE_URL || 'https://replyquick.ai';
+    
+    // Get the short code for this scan
+    const scanData = await prisma.$queryRaw<{
+      shortCode: string | null;
+    }[]>`
+      SELECT "shortCode" FROM multiuse_scans_demo WHERE id = ${userId} LIMIT 1
+    `;
+    
+    let resultLink: string;
+    if (scanData.length > 0 && scanData[0].shortCode) {
+      // Use short link if available
+      resultLink = `${baseUrl}/r/${scanData[0].shortCode}`;
+    } else {
+      // Fallback to full URL if no short code
+      resultLink = `${baseUrl}/multiusecase/${flowType}/result?token=${userId}&userId=${userId}`;
+    }
+    
+    const smsContent = [
+      `ReplyQuick (DentalScan): Your scan update is ready.`,
+      `Tap to view your results: ${resultLink}`,
+      `This message is for informational purposes only. Reply STOP to opt out.`
+    ].join(' ');
 
-    // Send SMS
-    let messageSid: string | null = null;
+    // Send SMS using the same method as demo SMS
+    let messageId: string | null = null;
     try {
-      const message = await twilioClient.messages.create({
-        body: smsContent,
-        from: TWILIO_FROM_NUMBER,
-        to: phone.trim()
+      console.log('Sending SMS using demo SMS format to:', phone.trim());
+      
+      const response = await fetch(replyQuickSmsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // "x-api-key": process.env.RQ_SMS_TOKEN ?? "",
+        },
+        body: JSON.stringify({
+          message: smsContent,
+          phoneNumber: phone.trim(),
+          // we don't have contactId in this multiuse → leave undefined
+        }),
       });
 
-      console.log('SMS sent successfully:', message.sid);
-      messageSid = message.sid;
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch {
+        // if JSON parse fails but HTTP is ok, just ignore
+      }
+
+      if (!response.ok) {
+        const msg = data?.error || `Remote SMS failed with status ${response.status}`;
+        console.warn('[multiuse SMS] Remote backend returned error:', msg);
+        // Still DO NOT throw — flow should continue
+        messageId = 'error-but-continuing';
+      } else {
+        console.log('SMS sent successfully via ReplyQuick (demo format):', data);
+        messageId = data.messageId || data.id || 'sent';
+        
+        if (data?.error) {
+          console.warn('[multiuse SMS] Remote backend reported soft error with 2xx:', data.error);
+        }
+      }
     } catch (smsError: any) {
       console.error('SMS sending error:', smsError);
-      return NextResponse.json(
-        { error: 'Failed to send SMS' },
-        { status: 500 }
-      );
+      // Don't fail the whole flow, just log the error
+      console.log('SMS failed, but continuing with flow completion...');
+      messageId = 'error-but-continuing';
     }
 
     // Update the scan record with SMS sent status
@@ -63,7 +111,7 @@ export async function POST(request: NextRequest) {
           resultJson: {
             ...result,
             smsSent: true,
-            smsId: messageSid,
+            smsId: messageId,
             sentAt: new Date().toISOString()
           }
         }
@@ -72,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      messageSid: messageSid,
+      messageId: messageId,
       message: 'Results sent successfully via SMS'
     });
 

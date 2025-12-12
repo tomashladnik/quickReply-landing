@@ -90,6 +90,7 @@ model DemoScanLink {
 }
 
 model MultiuseScan {
+  shortCode             String?   @unique @db.Text // Unique short code for result short link
   id                   String    @id @default(dbgenerated("gen_random_uuid()::text")) @db.Text
   demoScanId           String?   @map("demo_scan_id") @db.Text
   patientName          String?   @map("patient_name") @db.Text

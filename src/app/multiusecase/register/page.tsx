@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  const type = (searchParams.get('type') || 'gym') as FlowType;
+  const type = (searchParams.get('flowType') || searchParams.get('type') || 'gym') as FlowType;
   const token = searchParams.get('token') || 'multiuse-token';
   
   const [formData, setFormData] = useState<FormData>({
@@ -137,15 +137,18 @@ export default function RegisterPage() {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/multiuse/register', {
+      const response = await fetch('/api/multiuse/patient', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
-          type,
-          token
+          fullName: formData.name,
+          dateOfBirth: formData.dateOfBirth,
+          phone: formData.phone,
+          email: formData.email,
+          flow: type,
+          scanId: token
         }),
       });
       

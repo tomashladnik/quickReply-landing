@@ -5,7 +5,7 @@ type UploadParams = {
   index: number;
   blob: Blob;
   flowType?: "gym" | "school" | "charity";
-  userId?: string;
+  userId?: string; // real user id when you have it
 };
 
 export async function uploadMultiuseImage({
@@ -13,14 +13,16 @@ export async function uploadMultiuseImage({
   index,
   blob,
   flowType = "gym",
-  userId = "demo-user",
+  userId, // 👈 no demo default here
 }: UploadParams): Promise<string> {
   const form = new FormData();
   form.append("scanId", scanId);
   form.append("index", String(index));
   form.append("file", blob);
   form.append("flowType", flowType);
-  form.append("userId", userId);
+
+  // if userId is not provided, fall back to scanId
+  form.append("userId", userId ?? scanId);
 
   const res = await fetch("/api/multiuse/upload", {
     method: "POST",
