@@ -1,8 +1,11 @@
+// src/app/api/multiuse/scan/route.ts
+
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { z } from "zod";
+import { sendMultiuseResultSms } from "@/app/lib/dental/multiuse/results-sms";
 
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || "MultiUseCase";
 
@@ -13,6 +16,7 @@ const Body = z.object({
   consentMethod: z.enum(["school", "parent"]).optional(),
   hasSchoolConsentOnFile: z.boolean().optional(),
   userId: z.string().optional(),
+  phone: z.string().optional(), 
   images: z
     .array(
       z.object({
@@ -39,9 +43,12 @@ export async function POST(req: NextRequest) {
       scanId,
       flowType = "gym",
       images,
+      phone,
     } = parsed;
 
     const userId = parsed.userId || "anon";
+
+    // For storage paths; school currently treated like gym folder
     const flowFolder = flowType === "charity" ? "Charity" : "Gym";
     const effectiveUserId = userId || "demo-user";
 
@@ -96,7 +103,7 @@ export async function POST(req: NextRequest) {
 
     console.log("[MULTIUSE/SCAN] ML payload images:", mlImages);
 
-    // Call ML service
+    // ----- Call ML service -----
     let mlJson: any = null;
     if (imageUrls.length > 0) {
       const mlRes = await fetch(`${ML_BASE_URL}/v1/analyze`, {
@@ -125,7 +132,7 @@ export async function POST(req: NextRequest) {
       mlJson = await mlRes.json();
     }
 
-    // Store ML results in Supabase
+    // ----- Store ML results JSON in Supabase -----
     let jsonKey: string | null = null;
     if (mlJson) {
       const now = new Date();
@@ -145,6 +152,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ----- Build summary -----
     const summaryParts: string[] = [];
     if (mlJson?.overall_status) {
       summaryParts.push(`Overall status: ${mlJson.overall_status}`);
@@ -153,6 +161,28 @@ export async function POST(req: NextRequest) {
       summaryParts.push(`Quality score: ${mlJson.quality.score}`);
     }
     const summary = summaryParts.join(" | ") || "Analysis completed";
+
+    // ----- Send Result SMS for Gym + Charity -----
+    if (phone && (flowType === "gym" || flowType === "charity")) {
+      const origin = req.nextUrl.origin; // e.g. https://localhost:3000 or prod
+
+      try {
+        await sendMultiuseResultSms({
+          phone,
+          flowType: flowType as "gym" | "charity",
+          scanId,
+          baseUrl: origin,
+        });
+      } catch (smsErr) {
+        console.error("[MULTIUSE/SCAN] result SMS failed", smsErr);
+        // don't fail the request if SMS fails
+      }
+    } else {
+      console.log(
+        "[MULTIUSE/SCAN] SMS not sent - missing phone or unsupported flowType",
+        { phone, flowType }
+      );
+    }
 
     return NextResponse.json({
       ok: true,

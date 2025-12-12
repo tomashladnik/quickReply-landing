@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 
 /**
  * QR Routing Logic for Dental Scan Multi-Use Case Flow
- * 
+ *
  * Detects flow type (gym/school/charity) from QR parameters
  * Routes user to correct template based on flow
  * Applies output filtering rules per flow type
- * 
+ *
  * Expected Query Parameters:
  * - flow: "gym" | "school" | "charity"
  * - scanId: string (optional)
@@ -21,9 +20,10 @@ type SchoolLevel = "elementary" | "middle" | "high";
 type ConsentMethod = "school" | "parent";
 
 /**
- * GET /api/dental-scan/qr-route
- * 
+ * GET /api/multiuse/qr-route
+ *
  * Routes user based on QR parameters and returns appropriate template/config
+ * Also supports redirect=1 to send user to the appropriate details page.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid or missing flow parameter. Must be 'gym', 'school', or 'charity'.",
+          error:
+            "Invalid or missing flow parameter. Must be 'gym', 'school', or 'charity'.",
         },
         { status: 400 }
       );
@@ -51,7 +52,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "school_level is required for school flow. Must be 'elementary', 'middle', or 'high'.",
+            error:
+              "school_level is required for school flow. Must be 'elementary', 'middle', or 'high'.",
           },
           { status: 400 }
         );
@@ -61,7 +63,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "consent_method is required for school flow. Must be 'school' or 'parent'.",
+            error:
+              "consent_method is required for school flow. Must be 'school' or 'parent'.",
           },
           { status: 400 }
         );
@@ -71,38 +74,33 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "parent_contact is required when consent_method is 'parent'.",
+            error:
+              "parent_contact is required when consent_method is 'parent'.",
           },
           { status: 400 }
         );
       }
     }
 
-    // Create or update scan record if scanId is provided
-    let scanRecord = null;
+    // Build a simple scanRecord object for the response (no DB)
+    let scanRecord:
+      | {
+          id: string;
+          flowType: FlowType;
+          schoolLevel: SchoolLevel | null;
+          consentMethod: ConsentMethod | null;
+          minorProtected: boolean | null;
+        }
+      | null = null;
+
     if (scanId) {
-      scanRecord = await (prisma as any).scan.upsert({
-        where: { id: scanId },
-        update: {
-          flowType: flow,
-          schoolLevel: schoolLevel || null,
-          consentMethod: consentMethod || null,
-          parentContact: parentContact || null,
-          minorProtected: flow === "school" ? true : null,
-          updatedAt: new Date(),
-        },
-        create: {
-          id: scanId,
-          demoScanId: scanId,
-          flowType: flow,
-          schoolLevel: schoolLevel || null,
-          consentMethod: consentMethod || null,
-          parentContact: parentContact || null,
-          minorProtected: flow === "school" ? true : false,
-          reportDeliveryStatus: "pending",
-          status: "pending",
-        },
-      });
+      scanRecord = {
+        id: scanId,
+        flowType: flow,
+        schoolLevel: schoolLevel || null,
+        consentMethod: consentMethod || null,
+        minorProtected: flow === "school" ? true : null,
+      };
     }
 
     // Determine routing and filtering rules based on flow
@@ -112,6 +110,28 @@ export async function GET(request: NextRequest) {
       parentContact,
     });
 
+    // If redirect=1 is present, send to the appropriate details page
+    const redirectFlag = searchParams.get("redirect");
+    if (redirectFlag === "1" && scanId) {
+      let detailsPath: string;
+
+      if (flow === "gym") {
+        detailsPath = "/multiusecase/gym/details";
+      } else if (flow === "charity") {
+        detailsPath = "/multiusecase/charity/details";
+      } else {
+        // placeholder for school details page
+        detailsPath = "/multiusecase/school/details";
+      }
+
+      const redirectUrl = new URL(detailsPath, request.nextUrl.origin);
+      redirectUrl.searchParams.set("scanId", scanId);
+      redirectUrl.searchParams.set("flow", flow);
+
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Default JSON response (useful for debugging / API calls)
     return NextResponse.json(
       {
         success: true,
@@ -212,9 +232,10 @@ function getRoutingConfig(
 }
 
 /**
- * POST /api/dental-scan/qr-route
- * 
- * Update scan record with flow information and routing preferences
+ * POST /api/multiuse/qr-route
+ *
+ * Update scan record with flow information and routing preferences.
+ * For now, this does NOT touch the database – it just echoes back the data.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -247,60 +268,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "flow is required and must be 'gym', 'school', or 'charity'.",
+          error:
+            "flow is required and must be 'gym', 'school', or 'charity'.",
         },
         { status: 400 }
       );
     }
 
-    // Build update data object
-    const updateData: any = {
-      flowType: flow,
-      updatedAt: new Date(),
+    const scanRecord = {
+      id: scanId as string,
+      flowType: flow as FlowType,
+      schoolLevel: (school_level as SchoolLevel | undefined) ?? null,
+      consentMethod: (consent_method as ConsentMethod | undefined) ?? null,
+      parentContact: (parent_contact as string | undefined) ?? null,
+      brightnessScore: brightness_score ?? null,
+      shadeValue: shade_value ?? null,
+      idealShade: ideal_shade ?? null,
+      simplifiedStatus: simplified_status ?? null,
+      clinicRecommended: clinic_recommended ?? null,
+      originalJson: original_json ?? null,
     };
-
-    // Add flow-specific fields
-    if (flow === "school") {
-      if (school_level) updateData.schoolLevel = school_level;
-      if (consent_method) updateData.consentMethod = consent_method;
-      if (parent_contact) updateData.parentContact = parent_contact;
-      updateData.minorProtected = true;
-    }
-
-    // Add common fields if provided
-    if (brightness_score !== undefined) updateData.brightnessScore = brightness_score;
-    if (shade_value !== undefined) updateData.shadeValue = shade_value;
-    if (ideal_shade !== undefined) updateData.idealShade = ideal_shade;
-    if (simplified_status !== undefined) updateData.simplifiedStatus = simplified_status;
-    if (clinic_recommended !== undefined) updateData.clinicRecommended = clinic_recommended;
-    if (original_json !== undefined) updateData.originalJson = original_json;
-
-    // Update or create scan record
-    const scanRecord = await (prisma as any).scan.upsert({
-      where: { id: scanId },
-      update: updateData,
-      create: {
-        id: scanId,
-        demoScanId: scanId,
-        ...updateData,
-        status: "pending",
-        reportDeliveryStatus: "pending",
-      },
-    });
 
     return NextResponse.json(
       {
         success: true,
-        scan: {
-          id: scanRecord.id,
-          flowType: scanRecord.flowType,
-          schoolLevel: scanRecord.schoolLevel,
-          consentMethod: scanRecord.consentMethod,
-          brightnessScore: scanRecord.brightnessScore,
-          shadeValue: scanRecord.shadeValue,
-          simplifiedStatus: scanRecord.simplifiedStatus,
-          clinicRecommended: scanRecord.clinicRecommended,
-        },
+        scan: scanRecord,
       },
       { status: 200 }
     );
@@ -315,4 +307,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

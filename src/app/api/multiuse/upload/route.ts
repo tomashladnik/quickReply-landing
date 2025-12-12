@@ -1,7 +1,14 @@
+// src/app/api/multiuse/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || "MultiUseCase";
+
+function flowToFolder(flowType: string): "Gym" | "Charity" | "School" {
+  if (flowType === "charity") return "Charity";
+  if (flowType === "school") return "School";
+  return "Gym";
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +17,9 @@ export async function POST(req: NextRequest) {
     const indexRaw = form.get("index");
     const file = form.get("file") as Blob | null;
     const flowType = (form.get("flowType") as string) || "gym";
-    const userId = (form.get("userId") as string) || "demo-user";
+
+    // if userId not sent, default to scanId (no demo-user string)
+    const userId = String(form.get("userId") || scanId);
 
     if (!scanId || !file) {
       return NextResponse.json(
@@ -22,9 +31,11 @@ export async function POST(req: NextRequest) {
     const index = Number(indexRaw ?? 0);
     const safeIndex = Number.isFinite(index) ? index : 0;
 
-    const flowFolder = flowType === "charity" ? "Charity" : "Gym";
+    const flowFolder = flowToFolder(flowType);
     const fileName = `view-${safeIndex + 1}.jpg`;
-    const basePath = `${flowFolder}/${scanId}/${userId}`;
+
+    // MultiUseCase/<Gym|Charity|School>/<scanId>/<userId>/images/view-x.jpg
+    const basePath = `${flowFolder}/${scanId}/${userId}/images`;
     const filePath = `${basePath}/${fileName}`;
 
     const arrayBuffer = await file.arrayBuffer();
