@@ -26,7 +26,13 @@ interface Patient {
 function DentistDashboardClient() {
   // 🔹 Read query params from URL: /dentist-dashboard?demoId=...
   const searchParams = useSearchParams();
-  const dentistId = searchParams.get("demoId") || ""; // this is the DemoDentist.id
+  const rawDentistId = searchParams.get("demoId") || "";
+  // Decode the URL parameter and clean up any potential corruption
+  const dentistId = decodeURIComponent(rawDentistId);
+  
+  console.log("Raw dentist ID from URL:", rawDentistId);
+  console.log("Decoded dentist ID:", dentistId);
+  
   const dentistName = "Demo dentist"; // or from searchParams if you ever add it
   const expiresAtIso = ""; // if you later add ?expiresAt=... you can read it here
 

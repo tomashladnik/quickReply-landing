@@ -71,6 +71,11 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
       return;
     }
 
+    if (!acceptsSmsTerms) {
+      setSubmitError("Please accept the SMS terms to continue.");
+      return;
+    }
+
     setSubmitError(null);
     setIsSubmitting(true);
 
@@ -201,6 +206,7 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
                   type="checkbox"
                   checked={acceptsSmsTerms}
                   onChange={(e) => setAcceptsSmsTerms(e.target.checked)}
+                  required
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-[#4ebff7] focus:ring-[#4ebff7]"
                 />
                 <label
@@ -241,7 +247,7 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
                     Sending request...
                   </span>
                 ) : (
-                  "Contact Sales"
+                  "Get Demo"
                 )}
               </button>
             </form>
