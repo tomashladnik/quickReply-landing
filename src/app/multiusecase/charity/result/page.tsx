@@ -22,9 +22,17 @@ export default function CharityResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || 'demo-token';
+  const userId = searchParams.get('userId') || token; // Use userId if available, fallback to token
   
   const [result, setResult] = useState<CharityResult | null>(null);
+  const [mlData, setMlData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const handlePrint = () => {
+    const printUrl = `/print?code=${userId}&type=dental&title=Dental Screening Results&subtitle=AI-Powered Oral Health Analysis`;
+    window.open(printUrl, '_blank');
+  };
 
   useEffect(() => {
     loadResults();
@@ -32,17 +40,91 @@ export default function CharityResultPage() {
 
   const loadResults = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/charity/results?token=${token}`);
-      // const data = await response.json();
+      setLoading(true);
+      setError(null);
       
-      const mockResult: CharityResult = {
-        carePriorityScore: 'Medium',
-        explanation: 'Based on your dental screening, we recommend scheduling a professional evaluation to address potential dental care needs.',
+      // STEP 1: Get user data and check for existing ML results
+      console.log('Getting user data and ML results for userId:', userId);
+      const userResponse = await fetch(`/api/multiuse/user-info?userId=${userId}`);
+      
+      if (!userResponse.ok) {
+        throw new Error('Unable to fetch user information.');
+      }
+      
+      const userData = await userResponse.json();
+      console.log('User data retrieved:', userData);
+      
+      // STEP 2: Extract ML results from stored data
+      let mlData = null;
+      
+      console.log('Inspecting userData structure:');
+      console.log('- resultJson:', userData.resultJson);
+      console.log('- originalJson:', userData.originalJson);
+      console.log('- status:', userData.status);
+      
+      // Check for ML analysis in resultJson or originalJson
+      if (userData.resultJson && (userData.resultJson as any).mlAnalysis) {
+        console.log('✅ Using stored ML analysis from resultJson');
+        mlData = (userData.resultJson as any).mlAnalysis;
+      } else if (userData.resultJson && typeof userData.resultJson === 'object') {
+        console.log('🔍 Checking if resultJson itself contains ML data...');
+        const resultData = userData.resultJson as any;
+        if (resultData.triage_status || resultData.carePriorityScore || resultData.whitening_analysis || 
+            resultData.overall_status || resultData.findings || resultData.recommendations) {
+          console.log('✅ Found ML data directly in resultJson');
+          mlData = resultData;
+        }
+      } else if (userData.originalJson && (userData.originalJson as any).mlResults) {
+        console.log('✅ Using ML results from originalJson');
+        mlData = (userData.originalJson as any).mlResults;
+      } else if (userData.originalJson && typeof userData.originalJson === 'object') {
+        console.log('🔍 Checking if originalJson contains ML data...');
+        const originalData = userData.originalJson as any;
+        if (originalData.triage_status || originalData.carePriorityScore || originalData.whitening_analysis ||
+            originalData.overall_status || originalData.findings || originalData.recommendations) {
+          console.log('✅ Found ML data directly in originalJson');
+          mlData = originalData;
+        }
+      }
+      
+      console.log('🔍 Final ML data check - found:', !!mlData);
+      
+      // If still no ML data found, generate fallback data
+      if (!mlData) {
+        console.log('⚠️ No stored ML data found - generating fallback assessment');
+        mlData = {
+          triage_status: 'Medium',
+          carePriorityScore: 'Medium',
+          explanation: 'Assessment completed using general wellness guidelines. For detailed AI analysis, please try uploading new images.',
+          conditions: [
+            'General oral health maintenance recommended'
+          ],
+          quality_score: 0.8
+        };
+        
+        setError('Advanced ML analysis not available - showing general assessment');
+      }
+        
+      console.log('ML Analysis Data:', mlData);
+      
+      // Handle new ML service response format with fallbacks
+      const carePriorityScore = mlData.triage_status || mlData.carePriorityScore || mlData.overall_status || 'Medium';
+      const conditions = mlData.conditions || mlData.detectedIssues || 
+        (mlData.findings ? mlData.findings.filter((f: any) => f.confidence > 0.5).map((f: any) => f.type) : []) ||
+        (mlData.recommendations || []);
+      const qualityScore = mlData.quality_score || (mlData.quality ? mlData.quality.score : null) || 0.8;
+      const explanation = mlData.explanation || 
+        (mlData.recommendations && mlData.recommendations.length > 0 ? mlData.recommendations.join(' ') : null) ||
+        `Medical screening complete. Quality score: ${(qualityScore * 100).toFixed(0)}%. Professional evaluation recommended for detailed assessment.`;
+      
+      // Map API response to result interface with fallback values
+      const apiResult: CharityResult = {
+        carePriorityScore: carePriorityScore as CarePriority,
+        explanation: explanation,
         routingInfo: {
-          partnerName: 'Community Dental Care Clinic',
-          contactInfo: '1-800-555-CARE (2273)',
-          address: '123 Health Street, Community Center, TX 75009',
+          partnerName: 'ReplyQuick Demo Clinic',
+          contactInfo: '(555) 123-DEMO',
+          address: 'Florida, USA',
           nextSteps: [
             'Call to schedule your free consultation',
             'Bring this screening result to your appointment',
@@ -50,13 +132,41 @@ export default function CharityResultPage() {
             'Follow the recommended treatment plan'
           ]
         },
-        detectedIssues: ['Areas requiring attention noted', 'Professional evaluation recommended']
-      };
+        detectedIssues: conditions.map((condition: any) => 
+          typeof condition === 'string' ? condition : condition.type || condition.name || 'General dental health assessment'
+        )
+      };  
       
-      setResult(mockResult);
-      setLoading(false);
+      setResult(apiResult);
+      setMlData(mlData); // Store ML data for detailed findings display
     } catch (error) {
       console.error('Error loading results:', error);
+      
+      // FALLBACK: Generate basic medical screening result
+      const fallbackResult: CharityResult = {
+        carePriorityScore: 'Medium',
+        explanation: 'Basic medical screening completed. Our advanced analysis system is temporarily unavailable. This general assessment recommends professional dental evaluation for comprehensive care planning.',
+        routingInfo: {
+          partnerName: 'ReplyQuick Demo Clinic',
+          contactInfo: '(555) 123-DEMO',
+          address: 'Florida, USA',
+          nextSteps: [
+            'Call to schedule your free consultation',
+            'Bring this screening result to your appointment',
+            'Ask about financial assistance programs if needed',
+            'Follow the recommended treatment plan'
+          ]
+        },
+        detectedIssues: [
+          'General oral health maintenance recommended',
+          'Regular dental checkup advised',
+          'Preventive care consultation suggested'
+        ]
+      };
+      
+      setResult(fallbackResult);
+      setError('Advanced analysis temporarily unavailable - showing basic screening');
+    } finally {
       setLoading(false);
     }
   };
@@ -90,6 +200,15 @@ export default function CharityResultPage() {
           title: 'Looking Good',
           message: 'Continue your regular dental care routine and preventive visits.'
         };
+      default:
+        return {
+          icon: Clock,
+          color: '#6b7280',
+          bgColor: '#f3f4f6',
+          textColor: '#374151',
+          title: 'Analysis Complete',
+          message: 'Please consult with a dental professional for personalized care recommendations.'
+        };
     }
   };
 
@@ -105,6 +224,24 @@ export default function CharityResultPage() {
     );
   }
 
+  if (error && !result) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-amber-50 to-amber-100 flex items-center justify-center p-4">
+        <div className="text-center bg-white rounded-2xl p-8 shadow-xl max-w-md">
+          <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Service Unavailable</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-semibold transition"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!result) {
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 to-cyan-50 flex items-center justify-center p-4">
@@ -113,7 +250,7 @@ export default function CharityResultPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">Unable to Load Results</h2>
           <p className="text-gray-600 mb-6">We couldn't retrieve your screening results. Please try again.</p>
           <button
-            onClick={() => router.push(`/multiusecase/charity/capture?token=${token}`)}
+            onClick={() => router.push(`/multiusecase/charity/capture?token=${token}&userId=${userId}`)}
             className="w-full px-6 py-3 bg-[#4EBFF7] hover:bg-[#3da8d9] text-white rounded-xl font-semibold transition"
           >
             Retake Screening
@@ -127,19 +264,36 @@ export default function CharityResultPage() {
   const Icon = config.icon;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-cyan-50">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-cyan-50 print-layout">
       {/* Header */}
-      <div className="bg-[#4EBFF7] text-white shadow-lg">
+      <div className="bg-[#4EBFF7] text-white shadow-lg print-header">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <h1 className="text-2xl md:text-3xl font-bold text-center">Dental Screening Results</h1>
-          <p className="text-center text-blue-100 mt-1">Community Dental Care Program</p>
+          <p className="text-center text-blue-100 mt-1">ReplyQuick Demo Dental Program</p>
+          <div className="text-center mt-2 text-sm">
+            Generated on: {new Date().toLocaleDateString()}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 print-content">{/* Show fallback notice if using basic screening */}
+        {/* Show fallback notice if using basic screening */}
+        {error && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 text-amber-600 text-xl">ℹ️</div>
+              <h3 className="text-lg font-semibold text-amber-800">Service Notice</h3>
+            </div>
+            <p className="text-amber-700 mb-2">{error}</p>
+            <p className="text-sm text-amber-600">
+              The results below are based on general medical guidelines. Try again later for our advanced AI screening analysis.
+            </p>
+          </div>
+        )}
+
         {/* Care Priority Card */}
         <div 
-          className="rounded-2xl p-6 md:p-8 shadow-xl border-2"
+          className="rounded-2xl p-6 md:p-8 shadow-xl border-2 print-card"
           style={{ 
             backgroundColor: config.bgColor,
             borderColor: config.color
@@ -267,7 +421,7 @@ export default function CharityResultPage() {
         {/* Action Buttons */}
         <div className="space-y-3 pb-6">
           <button
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="w-full py-4 bg-[#4EBFF7] hover:bg-[#3da8d9] text-white rounded-xl font-bold text-lg shadow-lg transition transform hover:scale-[1.02]"
           >
             🖨️ Print Results
@@ -276,26 +430,6 @@ export default function CharityResultPage() {
           
         </div>
       </div>
-
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .print-section, .print-section * {
-            visibility: visible;
-          }
-          .print-section {
-            position: absolute;
-            left: 0;
-            top: 0;
-          }
-          button {
-            display: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

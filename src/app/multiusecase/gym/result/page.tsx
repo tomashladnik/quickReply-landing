@@ -9,44 +9,227 @@ export default function GymResultPage() {
   const token = searchParams.get('token') || '';
   const userId = searchParams.get('userId') || '';
   
-  const [currentShade, setCurrentShade] = useState('B3');
-  const [idealShade, setIdealShade] = useState('A1');
-  const [activeTarget, setActiveTarget] = useState<'current' | 'ideal'>('current');
+  const [currentShade, setCurrentShade] = useState<string | null>(null);
+  const [idealShade, setIdealShade] = useState<string | null>(null);
   const [smsStatus, setSmsStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [userInfo, setUserInfo] = useState<{name: string, phone: string} | null>(null);
+  const [mlResult, setMlResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch user information and auto-send SMS
+  const handlePrint = () => {
+    const printUrl = `/print?code=${userId}&type=gym&title=Fitness Assessment Results&subtitle=AI-Powered Body Composition Analysis`;
+    window.open(printUrl, '_blank');
+  };
+
+  // Fetch ML results and user information
   useEffect(() => {
     if (userId) {
-      fetchUserInfoAndSendSMS();
+      fetchMLResultsAndUserInfo();
     }
   }, [userId]);
 
-  const fetchUserInfoAndSendSMS = async () => {
+  const fetchMLResultsAndUserInfo = async () => {
     try {
-      // Fetch user information from database
-      const response = await fetch(`/api/multiuse/user-info?userId=${userId}`);
+      setLoading(true);
+      setError(null);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch user info');
+      // STEP 1: Get user data and check for existing ML results
+      console.log('Getting user data and ML results for userId:', userId);
+      const userResponse = await fetch(`/api/multiuse/user-info?userId=${userId}`);
+      
+      if (!userResponse.ok) {
+        throw new Error('Unable to fetch user information.');
       }
       
-      const userData = await response.json();
+      const userData = await userResponse.json();
+      console.log('User data retrieved:', userData);
       
-      if (userData.name && userData.phone) {
-        const userInfo = {
-          name: userData.name,
-          phone: userData.phone
+      // Store user info
+      if (userData.patientName && userData.patientPhone) {
+        setUserInfo({ name: userData.patientName, phone: userData.patientPhone });
+      }
+      
+      // STEP 2: Extract ML results from stored data
+      let mlData = null;
+      
+      console.log('Inspecting userData structure:');
+      console.log('- resultJson:', userData.resultJson);
+      console.log('- originalJson:', userData.originalJson);
+      console.log('- status:', userData.status);
+      console.log('- Full userData keys:', Object.keys(userData));
+      
+      // Check various places where ML results might be stored
+      if (userData.resultJson && (userData.resultJson as any).mlAnalysis) {
+        console.log('✅ Using stored ML analysis from resultJson');
+        mlData = (userData.resultJson as any).mlAnalysis;
+      } else if (userData.resultJson && typeof userData.resultJson === 'object') {
+        console.log('🔍 Checking if resultJson itself contains ML data...');
+        const resultData = userData.resultJson as any;
+        if (resultData.triage_status || resultData.carePriorityScore || resultData.whitening_analysis || 
+            resultData.overall_status || resultData.findings || resultData.recommendations) {
+          console.log('✅ Found ML data directly in resultJson');
+          mlData = resultData;
+        }
+      } else if (userData.originalJson && (userData.originalJson as any).mlResults) {
+        console.log('✅ Using ML results from originalJson');
+        mlData = (userData.originalJson as any).mlResults;
+      } else if (userData.originalJson && typeof userData.originalJson === 'object') {
+        console.log('🔍 Checking if originalJson contains ML data...');
+        const originalData = userData.originalJson as any;
+        if (originalData.triage_status || originalData.carePriorityScore || originalData.whitening_analysis ||
+            originalData.overall_status || originalData.findings || originalData.recommendations) {
+          console.log('✅ Found ML data directly in originalJson');
+          mlData = originalData;
+        }
+      }
+      
+      console.log('🔍 Final ML data check - found:', !!mlData);
+      
+      // If still no ML data found, generate fallback data instead of throwing error
+      if (!mlData) {
+        console.log('⚠️ No stored ML data found - generating fallback assessment');
+        mlData = {
+          triage_status: 'Medium',
+          carePriorityScore: 'Medium',
+          explanation: 'Assessment completed using general wellness guidelines. For detailed AI analysis, please try uploading new images.',
+          conditions: [
+            'General oral health maintenance recommended',
+            'Regular fitness routine beneficial'
+          ],
+          whitening_analysis: {
+            brightness_score: 0.75,
+            shade: 'B2',
+            ideal_shade: 'A2'
+          },
+          quality_score: 0.8
         };
         
-        setUserInfo(userInfo);
+        // Set error message to inform user about fallback
+        setError('Advanced ML analysis not available - showing general assessment');
+      }
         
-        // Auto-send SMS with results
+      console.log('ML Analysis Data:', mlData);
+      
+      // Handle new ML service response format with fallbacks
+      const carePriorityScore = mlData.triage_status || mlData.carePriorityScore || mlData.overall_status || 'Medium';
+      const whiteningData = mlData.whitening_analysis || {};
+      const conditions = mlData.conditions || mlData.detectedIssues || 
+        (mlData.findings ? mlData.findings.filter((f: any) => f.confidence > 0.5).map((f: any) => f.type) : []) ||
+        (mlData.recommendations || []);
+      const qualityScore = mlData.quality_score || (mlData.quality ? mlData.quality.score : null) || 0.8;
+      const explanation = mlData.explanation || 
+        (mlData.recommendations && mlData.recommendations.length > 0 ? mlData.recommendations.join(' ') : null) ||
+        `Wellness assessment complete. Quality score: ${(qualityScore * 100).toFixed(0)}%. Professional evaluation recommended for detailed assessment.`;
+      
+      // Create structured ML result with fallback values
+      const structuredResult = {
+        carePriorityScore: carePriorityScore,
+        explanation: explanation,
+        detectedIssues: conditions.map((condition: any) => 
+          typeof condition === 'string' ? condition : condition.type || condition.name || 'General wellness assessment'
+        ),
+        whitening: whiteningData,
+        qualityScore: qualityScore,
+        brightnessScore: whiteningData?.brightness_score || 0.7
+      };
+      
+      setMlResult(structuredResult);
+      
+      // STEP 3: Map dental priority to fitness shade progression
+      // Use actual whitening data if available, otherwise fallback to priority mapping
+      if (whiteningData && whiteningData.shade && whiteningData.ideal_shade) {
+        setCurrentShade(whiteningData.shade);
+        setIdealShade(whiteningData.ideal_shade);
+      } else {
+        // Fallback mapping based on triage status or general defaults
+        switch (carePriorityScore) {
+          case 'High':
+          case 'ATTENTION': // ML service uses "ATTENTION" for high priority
+            setCurrentShade('D4'); // Starting fitness level
+            setIdealShade('A1'); // Peak goal
+            break;
+          case 'Medium':
+          case 'OK': // ML service might use "OK" for medium/good status
+            setCurrentShade('B3'); // Moderate fitness
+            setIdealShade('A2'); // Good target
+            break;
+          case 'Low':
+          case 'GOOD': // ML service might use "GOOD" for low priority
+            setCurrentShade('B1'); // Advanced level
+            setIdealShade('A1'); // Elite goal
+            break;
+          default:
+            // Additional fallback for unknown priority
+            console.log('🔍 Unknown carePriorityScore:', carePriorityScore);
+            setCurrentShade('B2'); // Default starting point
+            setIdealShade('A2'); // Default goal
+            break;
+        }
+      }
+      
+      // STEP 4: Send SMS if we have both ML and user data
+      if (userInfo && mlResult) {
         await sendResultsViaSMS(userInfo);
       }
     } catch (error) {
-      console.error('Error fetching user info:', error);
-      setSmsStatus('error');
+      console.error('Error fetching data:', error);
+      console.log('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.log('Error message:', error instanceof Error ? error.message : String(error));
+      
+      // FALLBACK: Generate basic assessment result instead of showing error
+      const fallbackResult = {
+        carePriorityScore: 'Medium',
+        explanation: 'Basic wellness assessment completed. Our advanced analysis service is temporarily unavailable, but we\'ve provided a general assessment based on standard wellness guidelines.',
+        detectedIssues: [
+          'General oral health maintenance recommended',
+          'Regular fitness routine beneficial for overall wellness',
+          'Professional consultation advised for personalized care'
+        ],
+        whitening: {
+          brightness_score: 0.7,
+          shade: 'B2',
+          ideal_shade: 'A2'
+        },
+        qualityScore: 0.75,
+        brightnessScore: 0.7
+      };
+      
+      setMlResult(fallbackResult);
+      setCurrentShade('B2');
+      setIdealShade('A2');
+      
+      // Set a descriptive notice about the service issue
+      const errorMessage = error instanceof Error ? error.message : 'Service connection issue';
+      setError(`Service temporarily unavailable (${errorMessage}) - showing basic assessment`);
+      
+      // Try to get user info for SMS with fallback data (if not already retrieved)
+      if (!userInfo) {
+        try {
+          const response = await fetch(`/api/multiuse/user-info?userId=${userId}`);
+          if (response.ok) {
+            const userData = await response.json();
+            if (userData.patientName && userData.patientPhone) {
+              const fetchedUserInfo = { name: userData.patientName, phone: userData.patientPhone };
+              setUserInfo(fetchedUserInfo);
+              await sendResultsViaSMS(fetchedUserInfo);
+            }
+          }
+        } catch (userError) {
+          console.error('User info fetch error:', userError);
+          // Don't throw here, just log the error
+        }
+      } else if (mlResult) {
+        // We have both user info and ML result, send SMS
+        try {
+          await sendResultsViaSMS(userInfo);
+        } catch (smsError) {
+          console.error('SMS sending error:', smsError);
+          // Don't throw, just log the error
+        }
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,10 +237,35 @@ export default function GymResultPage() {
     setSmsStatus('sending');
     
     try {
+      // STRICT VALIDATION: Require all ML data and shade mappings
+      if (!mlResult || !mlResult.carePriorityScore || !currentShade || !idealShade) {
+        console.error('SMS BLOCKED: Missing ML data', { 
+          mlResult: !!mlResult, 
+          carePriorityScore: mlResult?.carePriorityScore,
+          currentShade, 
+          idealShade 
+        });
+        throw new Error('Cannot send results: ML analysis or shade mapping incomplete');
+      }
+      
+      console.log('SMS PROCEEDING: All validations passed', {
+        carePriorityScore: mlResult.carePriorityScore,
+        currentShade,
+        idealShade,
+        userPhone: user.phone
+      });
+      
       const result = {
-        currentStatus: 'Fitness Level B3',
-        recommendedPlan: '12-week transformation',
-        progressScore: '7.5/10'
+        fitnessLevel: mlResult.carePriorityScore,
+        recommendation: mlResult.explanation || 'Continue your wellness journey',
+        progressLevel: `${currentShade} to ${idealShade}`,
+        areas: mlResult.detectedIssues ? 
+          (Array.isArray(mlResult.detectedIssues) ? 
+            mlResult.detectedIssues.map((issue: any) => 
+              typeof issue === 'string' ? issue : issue.type || issue.name || 'General wellness'
+            ).join(', ') : 
+            'General wellness') : 
+          'General wellness maintenance'
       };
 
       const response = await fetch('/api/multiuse/send-result', {
@@ -99,17 +307,54 @@ export default function GymResultPage() {
     { code: 'D4', tone: 'Deep espresso', color: '#B89D85' },
   ];
 
-  const handleShadeClick = (code: string) => {
-    if (activeTarget === 'current') {
-      setCurrentShade(code);
-    } else {
-      setIdealShade(code);
-    }
-  };
-
   const currentIndex = shadeScale.findIndex(s => s.code === currentShade);
   const idealIndex = shadeScale.findIndex(s => s.code === idealShade);
   const stepsToGoal = currentIndex - idealIndex;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl border border-gray-100 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Processing Your Assessment</h2>
+          <p className="text-gray-600">Analyzing your wellness data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !mlResult) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-amber-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl border border-amber-200 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-8 h-8 text-amber-600 text-2xl">⚠️</div>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Service Unavailable</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-amber-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentShade || !idealShade || !mlResult) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-amber-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl border border-amber-200 max-w-md w-full text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Assessment Incomplete</h2>
+          <p className="text-gray-600">Unable to generate your wellness results. Please try again.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-emerald-50">
@@ -134,6 +379,20 @@ export default function GymResultPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-8">
+        {/* Show fallback notice if using basic assessment */}
+        {error && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 text-amber-600 text-xl">ℹ️</div>
+              <h3 className="text-lg font-semibold text-amber-800">Service Notice</h3>
+            </div>
+            <p className="text-amber-700 mb-2">{error}</p>
+            <p className="text-sm text-amber-600">
+              Your results below are based on general wellness guidelines. Try again later for our advanced AI analysis.
+            </p>
+          </div>
+        )}
+
         {/* Success Banner */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg">
           <div className="flex items-center gap-4">
@@ -142,7 +401,12 @@ export default function GymResultPage() {
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900 mb-1">Analysis Complete! 🎉</h2>
-              <p className="text-gray-700">Your personalized whitening plan is ready. You're {stepsToGoal} shades away from your ideal smile!</p>
+              <p className="text-gray-700">
+                {mlResult 
+                  ? `Your wellness level is ${mlResult.carePriorityScore || 'Medium'} (${currentShade}). You're ${Math.abs(stepsToGoal)} levels from your goal of ${idealShade}!`
+                  : `Your personalized plan is ready. You're ${stepsToGoal} levels away from your goal!`
+                }
+              </p>
             </div>
           </div>
         </div>
@@ -179,6 +443,180 @@ export default function GymResultPage() {
             </div>
           </div>
         )}
+
+        {/* Wellness Assessment Results */}
+        {mlResult && (
+          <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 print-card">
+            <div className="flex items-center gap-3 mb-6">
+              <TrendingUp className="w-6 h-6 text-[#4ebff7]" />
+              <h3 className="text-2xl font-bold text-gray-900">Your Wellness Assessment</h3>
+            </div>
+            
+            <div className="grid gap-6">
+              {/* Wellness Level */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-[#4ebff7] rounded-lg flex items-center justify-center">
+                    <Award className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-900">Wellness Level: {mlResult.carePriorityScore || 'Medium'}</h4>
+                    <p className="text-sm text-gray-600">Based on comprehensive assessment</p>
+                    {mlResult.brightnessScore && (
+                      <p className="text-sm text-blue-600 font-medium mt-1">
+                        Brightness Score: {(mlResult.brightnessScore * 100).toFixed(0)}%
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Progress Visualization */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl p-4 border">
+                    <p className="text-xs font-semibold text-gray-600 mb-2">Current Level</p>
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-12 h-12 rounded-lg border-2 border-gray-300"
+                        style={{ background: shadeScale.find(s => s.code === currentShade)?.color }}
+                      ></div>
+                      <div>
+                        <span className="text-2xl font-bold text-gray-900">{currentShade}</span>
+                        <p className="text-sm text-gray-600">{shadeScale.find(s => s.code === currentShade)?.tone}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl p-4 border">
+                    <p className="text-xs font-semibold text-gray-600 mb-2">Target Goal</p>
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-12 h-12 rounded-lg border-2 border-emerald-300"
+                        style={{ background: shadeScale.find(s => s.code === idealShade)?.color }}
+                      ></div>
+                      <div>
+                        <span className="text-2xl font-bold text-gray-900">{idealShade}</span>
+                        <p className="text-sm text-gray-600">{shadeScale.find(s => s.code === idealShade)?.tone}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Assessment Details */}
+              {(mlResult.explanation || mlResult.qualityScore) && (
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-2xl p-6 border border-purple-200">
+                  <h4 className="text-lg font-bold text-gray-900 mb-3">Assessment Summary:</h4>
+                  <p className="text-gray-700 leading-relaxed mb-3">{mlResult.explanation}</p>
+                  {mlResult.qualityScore && (
+                    <div className="bg-white rounded-lg p-3 border border-purple-200">
+                      <p className="text-sm font-semibold text-gray-900 mb-1">Image Quality Score:</p>
+                      <p className="text-sm text-gray-700">{(mlResult.qualityScore * 100).toFixed(1)}% - High quality analysis</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Areas of Focus */}
+              {mlResult.detectedIssues && mlResult.detectedIssues.length > 0 && (
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-100 rounded-2xl p-6 border border-amber-200">
+                  <h4 className="text-lg font-bold text-gray-900 mb-3">Areas to Focus On:</h4>
+                  <ul className="space-y-2">
+                    {mlResult.detectedIssues.map((condition: any, index: number) => (
+                      <li key={index} className="flex items-start gap-3 text-gray-700">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="leading-relaxed">
+                          {typeof condition === 'string' ? condition : (
+                            <div>
+                              <span className="font-medium">{condition.type || condition.name || 'Wellness Area'}</span>
+                              {condition.severity && <span className="text-sm text-gray-600 ml-2">({condition.severity})</span>}
+                              {condition.description && <div className="text-sm text-gray-600 mt-1">{condition.description}</div>}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Detailed ML Findings - Print Visible */}
+        <div className="print-card bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">🔬</span>
+            Detailed ML Analysis Results
+          </h3>
+          
+          {/* Raw ML Data Display */}
+          {mlResult && (
+            <div className="space-y-6">
+              {/* Overall Assessment */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold text-gray-900 mb-3">Overall Assessment</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Priority Level:</span>
+                    <span className="ml-2 font-medium text-gray-900">{mlResult.carePriorityScore || 'Medium'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Quality Score:</span>
+                    <span className="ml-2 font-medium text-gray-900">
+                      {mlResult.qualityScore ? `${(mlResult.qualityScore * 100).toFixed(0)}%` : '80%'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Brightness Analysis */}
+              {mlResult.whitening && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                  <h4 className="font-semibold text-gray-900 mb-3">Brightness Analysis</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Current Shade:</span>
+                      <span className="ml-2 font-medium text-gray-900">{mlResult.whitening.shade || currentShade}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Target Shade:</span>
+                      <span className="ml-2 font-medium text-gray-900">{mlResult.whitening.ideal_shade || idealShade}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Brightness Score:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {mlResult.whitening.brightness_score ? `${(mlResult.whitening.brightness_score * 100).toFixed(0)}%` : 
+                         mlResult.brightnessScore ? `${(mlResult.brightnessScore * 100).toFixed(0)}%` : '70%'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Detected Issues/Conditions */}
+              {mlResult.detectedIssues && mlResult.detectedIssues.length > 0 && (
+                <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                  <h4 className="font-semibold text-gray-900 mb-3">Detected Conditions</h4>
+                  <ul className="space-y-2">
+                    {mlResult.detectedIssues.map((issue: any, index: number) => (
+                      <li key={index} className="flex items-start gap-2 text-gray-700">
+                        <span className="text-amber-600 mt-1">▶</span>
+                        <span className="text-sm">{typeof issue === 'string' ? issue : issue.type || issue.name || 'Wellness condition'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Technical Details */}
+              <div className="text-xs text-gray-500 border-t border-gray-200 pt-4">
+                <p><strong>Analysis Method:</strong> AI-powered fitness image analysis</p>
+                <p><strong>Processing Date:</strong> {new Date().toLocaleDateString()}</p>
+                <p className="mt-2 italic">This analysis is for fitness screening purposes only and does not replace professional trainer consultation.</p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Current vs Ideal Comparison */}
         <section className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
@@ -285,36 +723,8 @@ export default function GymResultPage() {
 
         {/* Shade Scale Selector */}
         <section className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="mb-6">
             <h3 className="text-2xl font-bold text-gray-900">Complete Shade Scale</h3>
-            
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600 font-medium">Select:</span>
-              <div className="flex bg-gray-100 rounded-full p-1.5 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => setActiveTarget('current')}
-                  className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
-                    activeTarget === 'current'
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Current
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTarget('ideal')}
-                  className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
-                    activeTarget === 'ideal'
-                      ? 'bg-emerald-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Goal
-                </button>
-              </div>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
@@ -325,18 +735,16 @@ export default function GymResultPage() {
                                shadeScale.findIndex(s => s.code === shade.code) >= idealIndex;
 
               return (
-                <button
+                <div
                   key={shade.code}
-                  type="button"
-                  onClick={() => handleShadeClick(shade.code)}
                   className={`relative group rounded-2xl overflow-hidden transition-all duration-300 ${
                     isCurrent
                       ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
                       : isIdeal
                       ? 'ring-4 ring-emerald-500 shadow-2xl scale-105'
                       : isInPath
-                      ? 'ring-2 ring-[#4ebff7] shadow-lg hover:scale-105'
-                      : 'ring-1 ring-gray-200 shadow-md hover:shadow-xl hover:scale-105'
+                      ? 'ring-2 ring-[#4ebff7] shadow-lg'
+                      : 'ring-1 ring-gray-200 shadow-md'
                   }`}
                 >
                   <div 
@@ -362,7 +770,7 @@ export default function GymResultPage() {
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed">{shade.tone}</p>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -400,19 +808,19 @@ export default function GymResultPage() {
                   <MapPin className="w-6 h-6 text-[#4ebff7]" />
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-white mb-1">Shoreline Smile Studio</h4>
-                  <p className="text-white/95 text-sm">Level 4, Harbor Wellness Center, Downtown</p>
+                  <h4 className="text-xl font-bold text-white mb-1">ReplyQuick Demo Studio</h4>
+                  <p className="text-white/95 text-sm"> Location - Florida, USA</p>
                 </div>
               </div>
 
               <div className="space-y-3 mb-5">
                 <div className="flex items-center gap-3 text-white/95">
                   <Phone className="w-5 h-5 text-amber-300" />
-                  <span className="text-sm font-medium">+1 (555) 218-0142</span>
+                  <span className="text-sm font-medium">+1 (555) 123-XXXX</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/95">
                   <Calendar className="w-5 h-5 text-amber-300" />
-                  <span className="text-sm font-medium">Mon - Sat: 7:00 AM - 8:30 PM</span>
+                  <span className="text-sm font-medium">Mon - Fri: 9:00 AM - 6:00 PM ( Hours)</span>
                 </div>
               </div>
 
@@ -446,6 +854,34 @@ export default function GymResultPage() {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* Important Notice */}
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+          <div className="flex gap-3">
+            <div className="w-6 h-6 text-[#4EBFF7] shrink-0 mt-0.5">⚠️</div>
+            <div>
+              <p className="font-semibold text-blue-900 mb-1">Important Notice</p>
+              <p className="text-sm text-blue-800 leading-relaxed">
+                This fitness assessment is designed to help identify potential wellness opportunities. 
+                It is <strong>not a medical diagnosis</strong>. A professional fitness evaluation by a qualified trainer 
+                is recommended for a complete wellness assessment and personalized training plan.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="space-y-3 pb-6 no-print">
+          <button
+            onClick={handlePrint}
+            className="w-full py-4 bg-[#4EBFF7] hover:bg-[#3da8d9] text-white rounded-xl font-bold text-lg shadow-lg transition transform hover:scale-[1.02]"
+          >
+            📄 Print My Results
+          </button>
+          <button className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-base transition transform hover:scale-[1.02]">
+            📱 Share Results
+          </button>
         </div>
       </main>
     </div>

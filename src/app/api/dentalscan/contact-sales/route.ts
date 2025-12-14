@@ -3,6 +3,7 @@ import { createDentalLead } from "@/lib/dental/dentalLead";
 import { subscribeDentalLeadToConvertKit } from "@/lib/marketing/convertkit";
 import { sendDemoSms } from "@/app/lib/dental/demo-sms";
 import { prisma } from "@/lib/prisma";
+import { Resend } from "resend";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 

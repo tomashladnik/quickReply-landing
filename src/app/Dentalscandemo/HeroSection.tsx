@@ -45,12 +45,6 @@ export default function HeroSection({ onOpenDemo }: HeroSectionProps) {
                 Learn More
               </button>
             </div>
-            <p className="mt-6 text-sm text-gray-500">
-              Available at{" "}
-              <span className="font-mono text-[#4ebff7] font-semibold">
-                replyquick.ai/dentalscan
-              </span>
-            </p>
           </div>
 
           {/* Right Content - Mock Dashboard */}

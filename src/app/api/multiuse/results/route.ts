@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch scan record
-    const scan = await (prisma as any).scan.findUnique({
+    const scan = await prisma.multiuseScan.findUnique({
       where: { id: scanId },
     });
 

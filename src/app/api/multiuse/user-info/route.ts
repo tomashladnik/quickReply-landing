@@ -4,14 +4,14 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get('userId') || searchParams.get('code');
 
-    console.log('User-info API called with userId:', userId);
+    console.log('User-info API called with userId/code:', userId);
 
     if (!userId) {
-      console.log('User-info API: No userId provided');
+      console.log('User-info API: No userId or code provided');
       return NextResponse.json(
-        { error: 'User ID is required' },
+        { error: 'User ID or code is required' },
         { status: 400 }
       );
     }
@@ -57,9 +57,16 @@ export async function GET(request: NextRequest) {
         phone: scan.patientPhone,
         flowType: scan.flowType,
         status: scan.status,
-        originalData: scan.originalJson,
-        results: scan.resultJson
-      }
+        originalJson: scan.originalJson,  // Use consistent field names
+        resultJson: scan.resultJson      // Use consistent field names
+      },
+      // Also include direct access to the data
+      patientName: scan.patientName,
+      patientPhone: scan.patientPhone,
+      flowType: scan.flowType,
+      status: scan.status,
+      originalJson: scan.originalJson,
+      resultJson: scan.resultJson
     });
 
   } catch (error) {

@@ -473,6 +473,13 @@ export default function DentalImages({
       if (!verifyRes?.ok) throw new Error("Token verification failed");
 
       const patientId = verifyRes.scanId || "demo-patient";
+      
+      // Validate all slots have blobs before uploading
+      const invalidSlots = slots.filter((s, i) => !s.blob).map((_, i) => VIEWS[i]?.type || `slot${i}`);
+      if (invalidSlots.length > 0) {
+        throw new Error(`Missing images for: ${invalidSlots.join(', ')}. Please capture all required photos.`);
+      }
+      
       const blobs = slots.map((s) => s.blob!);
       const uploadResults = [];
       
@@ -499,11 +506,16 @@ export default function DentalImages({
       for (let i = 0; i < blobs.length; i++) {
         const formData = new FormData();
         
+        // Double-check blob exists
+        if (!blobs[i]) {
+          throw new Error(`No image captured for ${VIEWS[i]?.type || `view ${i + 1}`}. Please capture all required photos.`);
+        }
+        
         if (isDentalDemo) {
           // Dental demo upload
           formData.append("token", scanLinkToken);
-          formData.append("file", blobs[i], `${VIEWS[i].type}.jpg`);
-          formData.append("viewType", VIEWS[i].type);
+          formData.append("image", blobs[i], `${VIEWS[i].type}.jpg`);
+          formData.append("label", VIEWS[i].type);
           
           const uploadRes = await fetch("/api/demo/upload", {
             method: "POST",
@@ -562,27 +574,59 @@ export default function DentalImages({
           throw new Error(`Submit failed: ${errorText}`);
         }
       } else {
-        // For multiuse cases, send result via SMS using previously fetched userData
-        const resultRes = await fetch("/api/multiuse/send-result", {
+        // For multiuse cases, first call scan endpoint to get ML analysis
+        console.log('Starting ML analysis for multiuse case...');
+        
+        // Prepare image data for ML analysis
+        const imageData = uploadResults.map((result, index) => ({
+          view: VIEWS[index].type.toLowerCase(), // Convert to expected format (front, left, right, etc.)
+          filePath: `${userData.flowType === 'charity' ? 'Charity' : 'Gym'}/${scanLinkToken}/${scanLinkToken}/images/view-${index + 1}.jpg`
+        }));
+        
+        // Call the scan endpoint to get ML analysis and store in database
+        const scanRes = await fetch("/api/multiuse/scan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            scanId: scanLinkToken,
+            flowType: userData.flowType,
             userId: scanLinkToken,
             phone: userData.phone,
-            name: userData.name,
-            flowType: userData.flowType,
-            result: {
-              currentStatus: 'Assessment completed',
-              recommendedPlan: 'Personalized fitness plan based on photos',
-              progressScore: 'Available in app'
-            }
+            images: imageData
           }),
         });
 
-        if (!resultRes.ok) {
-          const errorText = await resultRes.text();
-          console.error("Result send error:", resultRes.status, errorText);
-          throw new Error(`Failed to send result: ${errorText}`);
+        if (!scanRes.ok) {
+          const errorText = await scanRes.text();
+          console.error("Scan analysis error:", scanRes.status, errorText);
+          console.log("Proceeding with basic result notification...");
+          
+          // If ML scan fails, still send basic SMS notification
+          const resultRes = await fetch("/api/multiuse/send-result", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: scanLinkToken,
+              phone: userData.phone,
+              name: userData.name,
+              flowType: userData.flowType,
+              result: {
+                currentStatus: 'Assessment completed',
+                recommendedPlan: 'Personalized fitness plan based on photos',
+                progressScore: 'Available in app'
+              }
+            }),
+          });
+
+          if (!resultRes.ok) {
+            const resultErrorText = await resultRes.text();
+            console.error("Result send error:", resultRes.status, resultErrorText);
+            throw new Error(`Failed to send result: ${resultErrorText}`);
+          }
+        } else {
+          const scanResult = await scanRes.json();
+          console.log('ML analysis completed successfully:', scanResult);
+          // The scan endpoint already handles SMS sending if configured
         }
       }
 

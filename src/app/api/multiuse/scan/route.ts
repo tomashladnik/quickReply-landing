@@ -4,6 +4,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendMultiuseResultSms } from "@/app/lib/dental/multiuse/results-sms";
 
@@ -149,6 +150,37 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error("[MULTIUSE/SCAN] Failed to upload analysis JSON:", error);
+      } else {
+        console.log("[MULTIUSE/SCAN] Successfully stored ML results in Supabase:", jsonKey);
+      }
+
+      // ----- Update database with ML results -----
+      try {
+        console.log("[MULTIUSE/SCAN] Updating database with ML results for scanId:", scanId);
+        
+        await prisma.multiuseScan.upsert({
+          where: { id: scanId },
+          create: {
+            id: scanId,
+            flowType: flowType,
+            resultJson: mlJson,
+            originalJson: mlJson,
+            status: "completed",
+            completedAt: now,
+          },
+          update: {
+            resultJson: mlJson,
+            originalJson: mlJson,
+            status: "completed",
+            completedAt: now,
+            updatedAt: now,
+          },
+        });
+
+        console.log("[MULTIUSE/SCAN] Successfully updated database with ML results");
+      } catch (dbError) {
+        console.error("[MULTIUSE/SCAN] Failed to update database with ML results:", dbError);
+        // Don't fail the request if database update fails
       }
     }
 
@@ -162,25 +194,27 @@ export async function POST(req: NextRequest) {
     }
     const summary = summaryParts.join(" | ") || "Analysis completed";
 
-    // ----- Send Result SMS for Gym + Charity -----
-    if (phone && (flowType === "gym" || flowType === "charity")) {
+    // ----- Send Result SMS for Gym + Charity (ONLY if ML analysis was successful) -----
+    if (phone && (flowType === "gym" || flowType === "charity") && mlJson) {
       const origin = req.nextUrl.origin; // e.g. https://localhost:3000 or prod
 
       try {
+        console.log("[MULTIUSE/SCAN] ML analysis successful, sending SMS...");
         await sendMultiuseResultSms({
           phone,
           flowType: flowType as "gym" | "charity",
           scanId,
           baseUrl: origin,
         });
+        console.log("[MULTIUSE/SCAN] SMS sent successfully");
       } catch (smsErr) {
         console.error("[MULTIUSE/SCAN] result SMS failed", smsErr);
         // don't fail the request if SMS fails
       }
     } else {
       console.log(
-        "[MULTIUSE/SCAN] SMS not sent - missing phone or unsupported flowType",
-        { phone, flowType }
+        "[MULTIUSE/SCAN] SMS not sent - missing phone, unsupported flowType, or ML analysis failed",
+        { phone, flowType, hasMLResults: !!mlJson }
       );
     }
 
