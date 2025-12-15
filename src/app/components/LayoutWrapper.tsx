@@ -18,7 +18,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     '/multiusecase/register',
     '/multiusecase/charity',
     '/multiusecase/school',
-    '/qr-demo',
+    '/multiusecase/qr-demo', // Updated path
     '/print', // Exclude print pages from header/footer
   ];
   const shouldShowLayout = !excludedPaths.some(path => pathname.startsWith(path));

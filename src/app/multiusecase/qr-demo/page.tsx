@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QrCode as QrCodeIcon, Link } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { QrCode as QrCodeIcon, Link, Clock } from 'lucide-react';
 
 export default function QRCodeDemoPage() {
   const [qrValue, setQrValue] = useState('https://example.com');
@@ -15,12 +16,21 @@ export default function QRCodeDemoPage() {
   const [scanId, setScanId] = useState('');
   const [flowType, setFlowType] = useState<'gym' | 'school' | 'charity'>('gym');
   const [multiUseQR, setMultiUseQR] = useState<string | null>(null);
+  const [showComingSoonDialog, setShowComingSoonDialog] = useState(false);
 
   // Multi-use case QR generation
   const generateScanId = () => {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 9);
     return `${flowType}-${timestamp}-${random}`;
+  };
+
+  const handleFlowTypeClick = (type: 'gym' | 'school' | 'charity') => {
+    if (type === 'school') {
+      setShowComingSoonDialog(true);
+      return;
+    }
+    setFlowType(type);
   };
 
   // Generate unique scan ID when component mounts or flow type changes
@@ -132,14 +142,25 @@ export default function QRCodeDemoPage() {
                     {(['gym', 'school', 'charity'] as const).map((type) => (
                       <button
                         key={type}
-                        onClick={() => setFlowType(type)}
+                        onClick={() => handleFlowTypeClick(type)}
                         className={`p-4 rounded-lg border-2 transition-all ${
                           flowType === type
                             ? 'border-[#4ebff7] bg-[#4ebff7]/10'
+                            : type === 'school'
+                            ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-60'
                             : 'border-gray-200 hover:border-[#4ebff7]/50'
                         }`}
+                        disabled={type === 'school'}
                       >
-                        <div className="text-lg font-semibold capitalize">{type}</div>
+                        <div className="text-lg font-semibold capitalize flex items-center justify-center gap-2">
+                          {type}
+                          {type === 'school' && (
+                            <Clock className="w-4 h-4 text-gray-500" />
+                          )}
+                        </div>
+                        {type === 'school' && (
+                          <div className="text-xs text-gray-500 mt-1">Coming Soon</div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -262,6 +283,39 @@ export default function QRCodeDemoPage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Coming Soon Dialog */}
+        <Dialog open={showComingSoonDialog} onOpenChange={setShowComingSoonDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-[#4ebff7]" />
+                School QR Code - Coming Soon
+              </DialogTitle>
+              <DialogDescription>
+                The school flow for QR code generation is currently under development. 
+                This feature will be available in an upcoming release.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-900 mb-2">What's coming:</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Specialized school health screening workflows</li>
+                <li>• Integration with school management systems</li>
+                <li>• Parental consent and notification features</li>
+                <li>• Bulk scanning capabilities for classrooms</li>
+              </ul>
+            </div>
+            <div className="flex justify-end mt-6">
+              <Button 
+                onClick={() => setShowComingSoonDialog(false)}
+                className="bg-[#4ebff7] hover:bg-[#52C1F0]"
+              >
+                Got it
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
