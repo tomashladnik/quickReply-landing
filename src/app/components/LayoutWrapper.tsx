@@ -13,6 +13,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     '/sales',
     '/patient-scan',
     '/dentist-dashboard',
+    '/school',
   ];
   const shouldShowLayout = !excludedPaths.some(path => pathname.startsWith(path));
 
