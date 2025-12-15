@@ -17,6 +17,7 @@ export default function ParentEnrollPage() {
   const [schoolCode, setSchoolCode] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Form fields
   const [parentName, setParentName] = useState('');
@@ -31,28 +32,67 @@ export default function ParentEnrollPage() {
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // TODO: Implement API call to verify school code
-    // For now, simulate the flow
-    setTimeout(() => {
-      // Mock school name based on code
-      setSchoolName(schoolCode.includes('PS') ? 'Parkview Elementary' : 
-                    schoolCode.includes('WEST') ? 'Westview Middle School' : 
-                    'Sample School');
+    setError(null);
+
+    try {
+      const res = await fetch('/api/school/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: schoolCode }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data?.message || data?.error || 'Invalid school code');
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      setSchoolName(data.school?.name || 'School');
       setStep('form');
+    } catch (err) {
+      setError('Unable to verify code right now. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // TODO: Implement API call to submit enrollment
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const res = await fetch('/api/school/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schoolCode,
+          parentName,
+          parentEmail,
+          parentPhone,
+          childName,
+          classroom,
+          digitalSignature,
+          shareWithDentist,
+          dentistEmail,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data?.error || 'Unable to submit enrollment right now.');
+        setIsLoading(false);
+        return;
+      }
+
       setStep('success');
+    } catch (err) {
+      setError('Unable to submit enrollment right now. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   if (step === 'success') {
@@ -150,6 +190,11 @@ export default function ParentEnrollPage() {
 
             <CardContent>
               <form onSubmit={handleCodeSubmit} className="space-y-4">
+                {error && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+                    {error}
+                  </p>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="schoolCode">School Code</Label>
                   <Input
@@ -203,6 +248,11 @@ export default function ParentEnrollPage() {
 
               <CardContent>
                 <form onSubmit={handleFormSubmit} className="space-y-5">
+                  {error && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+                      {error}
+                    </p>
+                  )}
                   {/* Parent Information */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-lg border-b pb-2">Parent Information</h3>

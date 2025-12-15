@@ -23,20 +23,28 @@ export default function ScanHistoryPage() {
   const [childName, setChildName] = useState('');
   const [history, setHistory] = useState<ScanHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch history from API
-    setTimeout(() => {
-      setChildName('Emma Doe');
-      setHistory([
-        { id: '1', date: '2024-01-15', result: 'all_good' },
-        { id: '2', date: '2023-12-15', result: 'all_good' },
-        { id: '3', date: '2023-11-15', result: 'needs_attention' },
-        { id: '4', date: '2023-10-15', result: 'all_good' },
-        { id: '5', date: '2023-09-15', result: 'all_good' },
-      ]);
-      setIsLoading(false);
-    }, 500);
+    const loadHistory = async () => {
+      try {
+        const resChild = await fetch(`/api/school/child/${childId}`);
+        if (resChild.ok) {
+          const data = await resChild.json();
+          setChildName(data.child?.name ?? '');
+        }
+        const res = await fetch(`/api/school/history/${childId}`);
+        if (!res.ok) throw new Error('Unable to load history');
+        const data = await res.json();
+        setHistory(data.history || []);
+      } catch (err) {
+        setError('Unable to load scan history right now.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadHistory();
   }, [childId]);
 
   const getResultConfig = (result: ScanResult) => {
@@ -81,6 +89,18 @@ export default function ScanHistoryPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center px-4">
+        <div className="bg-white border shadow-md rounded-lg p-6 max-w-md w-full text-center">
+          <p className="text-red-600 font-medium mb-2">Unable to load history</p>
+          <p className="text-gray-600 text-sm mb-4">{error}</p>
+          <Button onClick={() => router.push(`/school/parent/child/${childId}`)}>Back to Result</Button>
         </div>
       </div>
     );

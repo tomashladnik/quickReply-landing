@@ -32,31 +32,23 @@ export default function ParentDashboardPage() {
   const router = useRouter();
   const [children, setChildren] = useState<Child[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch children from API
-    // For now, use mock data
-    setTimeout(() => {
-      setChildren([
-        {
-          id: '1',
-          name: 'Emma Doe',
-          school: 'Parkview Elementary',
-          classroom: 'Grade 3 - Room 2',
-          latestScanDate: '2024-01-15',
-          latestResult: 'all_good',
-        },
-        {
-          id: '2',
-          name: 'Lucas Doe',
-          school: 'Westview Middle School',
-          classroom: 'Grade 6 - Room 5',
-          latestScanDate: '2024-01-10',
-          latestResult: 'needs_attention',
-        },
-      ]);
-      setIsLoading(false);
-    }, 500);
+    const loadChildren = async () => {
+      try {
+        const res = await fetch('/api/school/children');
+        if (!res.ok) throw new Error('Unable to load children');
+        const data = await res.json();
+        setChildren(data.children || []);
+      } catch (err) {
+        setError('Unable to load children right now.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadChildren();
   }, []);
 
   const getResultIcon = (result: ScanResult | null) => {
@@ -96,7 +88,6 @@ export default function ParentDashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('parent_token');
     router.push('/school/parent');
   };
 
@@ -165,6 +156,12 @@ export default function ParentDashboardPage() {
             View scan results and manage your children's dental health
           </p>
         </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+            {error}
+          </p>
+        )}
 
         {children.length === 0 ? (
           <Card className="shadow-lg">

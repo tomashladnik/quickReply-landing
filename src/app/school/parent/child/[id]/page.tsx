@@ -25,20 +25,33 @@ export default function ChildResultPage() {
   
   const [scanData, setScanData] = useState<ScanData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch scan data from API
-    setTimeout(() => {
-      setScanData({
-        id: childId,
-        date: '2024-01-15',
-        result: 'all_good',
-        childName: 'Emma Doe',
-        school: 'Parkview Elementary',
-        classroom: 'Grade 3 - Room 2',
-      });
-      setIsLoading(false);
-    }, 500);
+    const loadChild = async () => {
+      try {
+        const res = await fetch(`/api/school/child/${childId}`);
+        if (!res.ok) throw new Error('Not found');
+        const data = await res.json();
+        const child = data.child;
+        const latest = child.latestScan;
+
+        setScanData({
+          id: child.id,
+          date: latest?.date || new Date().toISOString(),
+          result: (latest?.result || child.latestResult || 'all_good') as ScanResult,
+          childName: child.name,
+          school: child.school,
+          classroom: child.classroom,
+        });
+      } catch (err) {
+        setError('Unable to load child data right now.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadChild();
   }, [childId]);
 
   const getResultConfig = (result: ScanResult) => {
@@ -88,6 +101,18 @@ export default function ChildResultPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center px-4">
+        <div className="bg-white border shadow-md rounded-lg p-6 max-w-md w-full text-center">
+          <p className="text-red-600 font-medium mb-2">Unable to load data</p>
+          <p className="text-gray-600 text-sm mb-4">{error}</p>
+          <Button onClick={() => router.push('/school/parent/dashboard')}>Back to Dashboard</Button>
         </div>
       </div>
     );

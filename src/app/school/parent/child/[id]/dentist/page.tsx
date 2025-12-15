@@ -35,20 +35,28 @@ export default function DentistSharingPage() {
   const [dentistEmail, setDentistEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch sharing status from API
-    setTimeout(() => {
-      setChildName('Emma Doe');
-      setSharing({
-        status: 'not_shared',
-        dentistEmail: null,
-        dentistName: null,
-        invitedAt: null,
-        activatedAt: null,
-      });
-      setIsLoadingData(false);
-    }, 500);
+    const loadData = async () => {
+      try {
+        const childRes = await fetch(`/api/school/child/${childId}`);
+        if (childRes.ok) {
+          const data = await childRes.json();
+          setChildName(data.child?.name ?? '');
+        }
+        const res = await fetch(`/api/school/dentist-share?childId=${childId}`);
+        if (!res.ok) throw new Error('Unable to load sharing data');
+        const data = await res.json();
+        setSharing(data.sharing);
+      } catch (err) {
+        setError('Unable to load dentist sharing data right now.');
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadData();
   }, [childId]);
 
   const handleSendInvite = async (e: React.FormEvent) => {
@@ -56,18 +64,22 @@ export default function DentistSharingPage() {
     if (!dentistEmail) return;
 
     setIsLoading(true);
-    // TODO: Implement API call to send invite
-    setTimeout(() => {
-      setSharing({
-        status: 'invite_sent',
-        dentistEmail: dentistEmail,
-        dentistName: null,
-        invitedAt: new Date().toISOString(),
-        activatedAt: null,
+    setError(null);
+    try {
+      const res = await fetch('/api/school/dentist-share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId, dentistEmail }),
       });
+      if (!res.ok) throw new Error('Unable to send invite');
+      const data = await res.json();
+      setSharing(data.sharing);
       setDentistEmail('');
+    } catch (err) {
+      setError('Unable to send invite right now.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleRevokeAccess = async () => {
@@ -76,30 +88,40 @@ export default function DentistSharingPage() {
     }
 
     setIsLoading(true);
-    // TODO: Implement API call to revoke access
-    setTimeout(() => {
-      setSharing({
-        status: 'revoked',
-        dentistEmail: sharing.dentistEmail,
-        dentistName: sharing.dentistName,
-        invitedAt: sharing.invitedAt,
-        activatedAt: null,
+    setError(null);
+    try {
+      const res = await fetch('/api/school/dentist-share', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId, action: 'revoke' }),
       });
+      if (!res.ok) throw new Error('Unable to revoke');
+      const data = await res.json();
+      setSharing(data.sharing);
+    } catch (err) {
+      setError('Unable to revoke access right now.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleReEnable = async () => {
     setIsLoading(true);
-    // TODO: Implement API call to re-enable sharing
-    setTimeout(() => {
-      setSharing({
-        ...sharing,
-        status: 'active',
-        activatedAt: new Date().toISOString(),
+    setError(null);
+    try {
+      const res = await fetch('/api/school/dentist-share', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId, action: 'activate' }),
       });
+      if (!res.ok) throw new Error('Unable to re-enable');
+      const data = await res.json();
+      setSharing(data.sharing);
+    } catch (err) {
+      setError('Unable to re-enable sharing right now.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   if (isLoadingData) {
@@ -149,6 +171,12 @@ export default function DentistSharingPage() {
             Grant your child's dentist access to view full diagnostic reports
           </p>
         </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+            {error}
+          </p>
+        )}
 
         {/* Current Status */}
         <Card className="shadow-lg mb-6">

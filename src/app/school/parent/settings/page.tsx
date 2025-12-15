@@ -24,29 +24,35 @@ export default function ParentSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch settings from API
-    setTimeout(() => {
-      setConsentStatus({
-        active: true,
-        lastUpdated: '2024-01-01',
-        children: ['Emma Doe', 'Lucas Doe'],
-      });
-      setEmail('parent@example.com');
-      setPhone('+1 (555) 123-4567');
-      setPreferEmail(true);
-      setIsLoading(false);
-    }, 500);
+    const load = async () => {
+      try {
+        const res = await fetch('/api/school/consent');
+        if (!res.ok) throw new Error('Unable to load consent');
+        const data = await res.json();
+        setConsentStatus(data.consent);
+        setEmail('parent@example.com');
+        setPhone('+1 (555) 123-4567');
+        setPreferEmail(true);
+      } catch (err) {
+        setError('Unable to load consent settings right now.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const handleSavePreferences = async () => {
     setIsLoading(true);
-    // TODO: Implement API call to save preferences
+    setError(null);
+    // Preferences are front-end only in this mock; pretend saved
     setTimeout(() => {
       alert('Preferences saved successfully!');
       setIsLoading(false);
-    }, 500);
+    }, 400);
   };
 
   const handleRevokeConsent = async () => {
@@ -55,16 +61,22 @@ export default function ParentSettingsPage() {
     }
 
     setIsLoading(true);
-    // TODO: Implement API call to revoke consent
-    setTimeout(() => {
-      setConsentStatus({
-        ...consentStatus!,
-        active: false,
-        lastUpdated: new Date().toISOString(),
+    setError(null);
+    try {
+      const res = await fetch('/api/school/consent', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: false }),
       });
+      if (!res.ok) throw new Error('Unable to revoke consent');
+      const data = await res.json();
+      setConsentStatus(data.consent);
       alert('Consent has been revoked. Your children will no longer be able to participate.');
+    } catch (err) {
+      setError('Unable to revoke consent right now.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleRequestDeletion = async () => {
@@ -74,19 +86,21 @@ export default function ParentSettingsPage() {
     }
 
     setIsDeleting(true);
-    // TODO: Implement API call to request deletion
-    setTimeout(() => {
+    setError(null);
+    try {
+      const res = await fetch('/api/school/consent', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Unable to request deletion');
       alert('Data deletion request submitted. You will receive a confirmation email shortly.');
-      setIsDeleting(false);
       setShowDeleteConfirm(false);
-      // Logout after deletion request
-      localStorage.removeItem('parent_token');
       router.push('/school/parent');
-    }, 2000);
+    } catch (err) {
+      setError('Unable to submit deletion request right now.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('parent_token');
     router.push('/school/parent');
   };
 
@@ -137,6 +151,12 @@ export default function ParentSettingsPage() {
             Manage your account preferences and consent settings
           </p>
         </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+            {error}
+          </p>
+        )}
 
         {/* Consent Status */}
         <Card className="shadow-lg mb-6">
