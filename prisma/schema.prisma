@@ -88,3 +88,72 @@ model DemoScanLink {
 
   @@map("demo_scan_link")
 }
+
+model School {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+
+  teachers  Teacher[]
+  classes   SchoolClass[]
+  students  Student[]
+
+  @@map("school")
+}
+
+model Teacher {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  school       School       @relation(fields: [schoolId], references: [id])
+  schoolId     String
+  createdAt    DateTime     @default(now())
+
+  classes      SchoolClass[]
+
+  @@map("teacher")
+}
+
+model SchoolClass {
+  id          String           @id @default(cuid())
+  name        String
+  grade       String?
+  teacher     Teacher          @relation(fields: [teacherId], references: [id])
+  teacherId   String
+  school      School           @relation(fields: [schoolId], references: [id])
+  schoolId    String
+  createdAt   DateTime         @default(now())
+
+  enrollments ClassEnrollment[]
+
+  @@map("school_class")
+}
+
+model Student {
+  id         String           @id @default(cuid())
+  firstName  String
+  lastName   String
+  school     School           @relation(fields: [schoolId], references: [id])
+  schoolId   String
+  createdAt  DateTime         @default(now())
+
+  enrollments ClassEnrollment[]
+
+  @@map("student")
+}
+
+model ClassEnrollment {
+  id              String      @id @default(cuid())
+  class           SchoolClass @relation(fields: [classId], references: [id])
+  classId         String
+  student         Student     @relation(fields: [studentId], references: [id])
+  studentId       String
+  consent         Boolean     @default(false)
+  scanStatus      String      @default("not_completed")
+  scanCompletedAt DateTime?
+  createdAt       DateTime    @default(now())
+
+  @@unique([classId, studentId])
+  @@map("class_enrollment")
+}
