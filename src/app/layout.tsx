@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LayoutWrapper } from "./components/LayoutWrapper";
+import { Providers } from "../components/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      
+
       {/* --- CORE IMPROVEMENT: Flexible layout with flexbox --- */}
       {/* This ensures the footer is pushed to the bottom of the screen on short pages. */}
       <body
@@ -42,9 +43,11 @@ export default function RootLayout({
         </a>
 
         {/* Use the LayoutWrapper to conditionally show header/footer */}
-        <LayoutWrapper>
-          {children}
-        </LayoutWrapper>
+        <Providers>
+          <LayoutWrapper>
+            {children}
+          </LayoutWrapper>
+        </Providers>
       </body>
     </html>
   );

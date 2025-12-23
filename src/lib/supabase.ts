@@ -33,6 +33,10 @@ export const SUPABASE_DENTIST_BUCKET =
 export const SUPABASE_DEMO_BUCKET =
   process.env.SUPABASE_DEMO_BUCKET || "dental-demo";
 
+// Student Portal bucket (minor scans)
+export const SUPABASE_SCHOOL_BUCKET =
+  process.env.SUPABASE_SCHOOL_BUCKET || "School";
+
 // If you keep a separate admin, use the same key:
 export const supabaseAdmin = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
