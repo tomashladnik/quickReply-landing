@@ -9,7 +9,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   
   // Pages that should not show the main header/footer
   const excludedPaths = [
-    '/Dentalscandemo',
+    '/dentalscan',
     '/sales',
     '/patient-scan',
     '/dentist-dashboard',

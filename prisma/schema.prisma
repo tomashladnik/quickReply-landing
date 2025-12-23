@@ -144,3 +144,15 @@ model StudentScan {
 
   @@map("student_scan")
 }
+
+model PartnerWithUs {
+  id           String   @id @default(cuid())
+  name         String
+  email        String
+  organization String?
+  type         String
+  message      String?
+  createdAt    DateTime @default(now())
+
+  @@map("PartnerWithUs")
+}

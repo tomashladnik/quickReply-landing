@@ -8,11 +8,10 @@ export default function CtaSection({ onOpenDemo }: CtaSectionProps) {
     <section className="py-20 bg-[#4ebff7] text-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-4xl md:text-5xl font-bold mb-6">
-          Let&apos;s Start Recovering Your Missed Leads
+          Maximize Your Dental Screening ROI
         </h2>
         <p className="text-xl text-white/90 mb-12">
-          We&apos;ll show you exactly how much revenue you&apos;re leaving on
-          the table.
+          Track and convert every patient who starts a dental assessment.
         </p>
         <button
           onClick={onOpenDemo}

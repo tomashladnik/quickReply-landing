@@ -5,7 +5,7 @@ export const navItems = [
   {
     index: 0,
     label: "DentalScan",
-    href: "/Dentalscandemo",
+    href: "/dentalscan",
   },
   {
     index: 1,
