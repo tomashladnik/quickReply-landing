@@ -4,6 +4,7 @@
 
 import { useState, FormEvent, ChangeEvent } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface FormData {
   name: string;
@@ -121,7 +122,7 @@ export default function SalesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
@@ -271,45 +272,74 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-semibold text-white text-sm sm:text-lg transition-all duration-200 ${
-                isSubmitting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#4ebff7] hover:bg-[#3da8d9] hover:shadow-lg transform hover:-translate-y-0.5"
-              }`}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white"
-                    fill="none"
+            {/* Buttons Row - Side by Side */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`py-3 sm:py-4 px-3 sm:px-4 rounded-lg font-semibold text-white text-sm sm:text-base transition-all duration-200 ${
+                  isSubmitting
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#4ebff7] hover:bg-[#3da8d9] hover:shadow-lg transform hover:-translate-y-0.5"
+                }`}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span className="text-xs sm:text-sm">Sending...</span>
+                  </span>
+                ) : (
+                  "Send Demo Link"
+                )}
+              </button>
+
+              {/* Documentation Link Button */}
+              <Link 
+                href="/sales/docs" 
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <button
+                  type="button"
+                  className="w-full py-3 sm:py-4 px-3 sm:px-4 rounded-lg font-semibold text-[#4ebff7] bg-blue-50 border-2 border-[#4ebff7] text-sm sm:text-base transition-all duration-200 hover:bg-[#4ebff7] hover:text-white hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-1.5 sm:gap-2"
+                >
+                  <svg 
+                    className="w-4 h-4 sm:w-5 sm:h-5" 
+                    fill="none" 
+                    stroke="currentColor" 
                     viewBox="0 0 24 24"
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
                     />
                   </svg>
-                  <span className="text-xs sm:text-base">
-                    Sending Demo Link...
-                  </span>
-                </span>
-              ) : (
-                "Send Demo Link"
-              )}
-            </button>
+                  <span className="hidden sm:inline">Sales Docs</span>
+                  <span className="sm:hidden">Docs</span>
+                </button>
+              </Link>
+            </div>
 
             {submissionError && (
               <p className="text-xs sm:text-sm text-red-600 mt-2 text-center">
@@ -386,7 +416,7 @@ export default function SalesPage() {
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
-            className="fixed inset-0 bg-gradient-to-br from-gray-50 to-blue-50 bg-opacity-95 transition-opacity"
+            className="fixed inset-0 bg-linear-to-br from-gray-50 to-blue-50 bg-opacity-95 transition-opacity"
             onClick={() => setShowSuccessModal(false)}
           />
 
