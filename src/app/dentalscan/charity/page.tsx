@@ -6,6 +6,8 @@ import Link from "next/link";
 import DentalScanNav from "../../components/DentalScanNav";
 import PartnerWithUsModal from "../PartnerWithUsModal";
 
+
+
 export default function CharityPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
@@ -17,6 +19,38 @@ export default function CharityPage() {
     { amount: 50, children: 10 },
     { amount: 100, children: 20 }
   ];
+
+  const handleDonation = async () => {
+    const amount = selectedAmount || parseFloat(customAmount);
+
+    if (!amount || amount < 1) {
+      alert('Please enter a valid donation amount');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/dentalscan/charity-donation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert('Error creating donation session. Please try again.');
+        return;
+      }
+
+      // Redirect directly to Stripe Checkout URL
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -40,12 +74,12 @@ export default function CharityPage() {
                 Preventive Oral Health Screening for Underserved Communities
               </p>
               <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-                DentalScan is an AI powered oral health screening platform donated to charities and nonprofit 
-                organizations to help identify potential oral health concerns early and connect individuals, 
+                DentalScan is an AI powered oral health screening platform donated to charities and nonprofit
+                organizations to help identify potential oral health concerns early and connect individuals,
                 especially children, with licensed dental professionals when needed.
               </p>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                This program exists to support charities working directly with underserved populations by giving 
+                This program exists to support charities working directly with underserved populations by giving
                 them access to modern screening technology without cost barriers.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -65,8 +99,8 @@ export default function CharityPage() {
                   Donate Now
                 </button>
               </div>
-                <PartnerWithUsModal open={showPartnerModal} onClose={() => setShowPartnerModal(false)} />
-              
+              <PartnerWithUsModal open={showPartnerModal} onClose={() => setShowPartnerModal(false)} />
+
             </div>
 
             {/* Right Content - Mock Dashboard */}
@@ -127,7 +161,7 @@ export default function CharityPage() {
               Bridging the gap in preventive dental care for underserved communities
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
               <div className="w-12 h-12 bg-gradient-to-r from-[#4EBFF7] to-[#35A3E8] rounded-lg flex items-center justify-center mb-6">
@@ -188,7 +222,7 @@ export default function CharityPage() {
               Focusing on early intervention for the most vulnerable populations
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
               <div className="w-12 h-12 bg-gradient-to-r from-[#4EBFF7] to-[#35A3E8] rounded-lg flex items-center justify-center mb-6">
@@ -249,7 +283,7 @@ export default function CharityPage() {
               Fast and non-invasive oral health screenings using secure guided photo capture and AI-assisted analysis
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
               <div className="w-12 h-12 bg-gradient-to-r from-[#4EBFF7] to-[#35A3E8] rounded-lg flex items-center justify-center mb-6">
@@ -322,7 +356,7 @@ export default function CharityPage() {
               Simple, secure process designed for community outreach programs
             </p>
           </div>
-          
+
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col lg:flex-row gap-6 lg:gap-4">
               {/* Step 1 */}
@@ -404,7 +438,7 @@ export default function CharityPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="mt-12 text-center">
               <div className="inline-block bg-gradient-to-r from-gray-800 to-gray-600 px-8 py-4 rounded-xl text-white">
                 <p className="text-lg font-semibold">
@@ -427,7 +461,7 @@ export default function CharityPage() {
               Understanding the role and limitations of preventive dental screening
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto mb-12">
             {/* DentalScan IS */}
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow">
@@ -551,7 +585,6 @@ export default function CharityPage() {
                   DentalScan is donated to qualifying charities at no cost. Community donations help expand access and sustain development.
                 </p>
               </div>
-
               <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
                 <div className="flex items-center mb-4">
                   <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-4">
@@ -569,17 +602,16 @@ export default function CharityPage() {
 
             <div className="bg-white/15 backdrop-blur-sm p-6 rounded-xl border border-white/20">
               <h3 className="text-xl font-bold text-white text-center mb-6">Choose an amount to make an impact</h3>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 {donationAmounts.map((item) => (
                   <button
                     key={item.amount}
                     onClick={() => setSelectedAmount(item.amount)}
-                    className={`p-4 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-                      selectedAmount === item.amount
-                        ? 'bg-white text-[#4EBFF7] shadow-lg'
-                        : 'bg-white/20 text-white border border-white/30 hover:bg-white/30'
-                    }`}
+                    className={`p-4 rounded-lg font-semibold transition-all transform hover:scale-105 ${selectedAmount === item.amount
+                      ? 'bg-white text-[#4EBFF7] shadow-lg'
+                      : 'bg-white/20 text-white border border-white/30 hover:bg-white/30'
+                      }`}
                   >
                     <div className="text-xl font-bold mb-1">${item.amount}</div>
                     <div className="text-xs opacity-80">
@@ -588,7 +620,7 @@ export default function CharityPage() {
                   </button>
                 ))}
               </div>
-              
+
               <div className="flex flex-col md:flex-row gap-4 items-center">
                 <div className="flex-1">
                   <input
@@ -599,11 +631,13 @@ export default function CharityPage() {
                     className="w-full p-3 rounded-lg bg-white/20 border border-white/30 text-white font-semibold text-center placeholder-blue-200 focus:ring-2 focus:ring-white/50 focus:border-transparent"
                   />
                 </div>
-                <button className="px-8 py-3 bg-white text-[#4EBFF7] rounded-lg font-bold hover:bg-blue-50 transition-all shadow-lg transform hover:scale-105 border-2 border-white hover:border-blue-100">
+                <button
+                  onClick={handleDonation}
+                  className="px-8 py-3 bg-white text-[#4EBFF7] rounded-lg font-bold hover:bg-blue-50 transition-all shadow-lg transform hover:scale-105 border-2 border-white hover:border-blue-100">
                   💙 Donate Now
                 </button>
               </div>
-              
+
               <div className="mt-4 text-center">
                 <p className="text-xs text-blue-100">
                   All donations are used exclusively to expand access to preventive oral health screening for children through charity-led programs.
@@ -625,7 +659,7 @@ export default function CharityPage() {
               DentalScan is built with privacy, security, and ethical use at its core
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
               <div className="w-10 h-10 bg-gradient-to-r from-[#4EBFF7] to-[#35A3E8] rounded-lg flex items-center justify-center mb-4">
