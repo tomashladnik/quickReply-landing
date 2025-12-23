@@ -153,7 +153,7 @@ export default function SalesDocsPage() {
           <div className="flex">
             <button
               onClick={() => setActiveTab('onboarding')}
-              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-colors duration-200 ${
+              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-colors duration-200 cursor-pointer ${
                 activeTab === 'onboarding'
                   ? 'text-[#4ebff7] border-b-2 border-[#4ebff7] bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -166,7 +166,7 @@ export default function SalesDocsPage() {
             </button>
             <button
               onClick={() => setActiveTab('agreements')}
-              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-colors duration-200 ${
+              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-colors duration-200 cursor-pointer ${
                 activeTab === 'agreements'
                   ? 'text-[#4ebff7] border-b-2 border-[#4ebff7] bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -292,7 +292,7 @@ export default function SalesDocsPage() {
                       </div>
                       <button
                         onClick={() => handleDownload(doc.path, doc.filename)}
-                        className="shrink-0 px-3 sm:px-4 py-2 bg-[#4ebff7] hover:bg-[#3da8d9] text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors duration-200 flex items-center gap-2"
+                        className="shrink-0 px-3 sm:px-4 py-2 bg-[#4ebff7] hover:bg-[#3da8d9] text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors duration-200 flex items-center gap-2 cursor-pointer"
                       >
                         <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="hidden sm:inline">Download</span>

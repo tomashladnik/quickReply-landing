@@ -122,7 +122,7 @@ export default function SalesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
@@ -281,7 +281,7 @@ export default function SalesPage() {
                 className={`py-3 sm:py-4 px-3 sm:px-4 rounded-lg font-semibold text-white text-sm sm:text-base transition-all duration-200 ${
                   isSubmitting
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-[#4ebff7] hover:bg-[#3da8d9] hover:shadow-lg transform hover:-translate-y-0.5"
+                    : "bg-[#4ebff7] hover:bg-[#3da8d9] hover:shadow-lg transform hover:-translate-y-0.5 cursor-pointer"
                 }`}
               >
                 {isSubmitting ? (
@@ -320,7 +320,7 @@ export default function SalesPage() {
               >
                 <button
                   type="button"
-                  className="w-full py-3 sm:py-4 px-3 sm:px-4 rounded-lg font-semibold text-[#4ebff7] bg-blue-50 border-2 border-[#4ebff7] text-sm sm:text-base transition-all duration-200 hover:bg-[#4ebff7] hover:text-white hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-1.5 sm:gap-2"
+                  className="w-full py-3 sm:py-4 px-3 sm:px-4 rounded-lg font-semibold text-[#4ebff7] bg-blue-50 border-2 border-[#4ebff7] text-sm sm:text-base transition-all duration-200 hover:bg-[#4ebff7] hover:text-white hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
                 >
                   <svg 
                     className="w-4 h-4 sm:w-5 sm:h-5" 
@@ -416,7 +416,7 @@ export default function SalesPage() {
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
-            className="fixed inset-0 bg-linear-to-br from-gray-50 to-blue-50 bg-opacity-95 transition-opacity"
+            className="fixed inset-0 bg-gradient-to-br from-gray-50 to-blue-50 bg-opacity-95 transition-opacity"
             onClick={() => setShowSuccessModal(false)}
           />
 
