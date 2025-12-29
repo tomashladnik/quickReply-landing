@@ -60,17 +60,22 @@ export default function DentistSharingPage() {
         }
 
         const data = await response.json();
+        
+        if (!data || !data.child || !data.child.name) {
+          throw new Error('Invalid response from server');
+        }
+        
         setChildName(data.child.name);
         
-        if (data.shares && data.shares.length > 0) {
+        if (data.shares && Array.isArray(data.shares) && data.shares.length > 0) {
           const activeShare = data.shares.find((s: any) => s.isActive);
           if (activeShare) {
             setSharing({
               status: 'active',
-              dentistEmail: activeShare.dentistEmail,
-              dentistName: activeShare.dentistName,
-              invitedAt: activeShare.createdAt,
-              activatedAt: activeShare.activatedAt,
+              dentistEmail: activeShare.dentistEmail || null,
+              dentistName: activeShare.dentistName || null,
+              invitedAt: activeShare.createdAt || null,
+              activatedAt: activeShare.activatedAt || null,
             });
           } else {
             setSharing({
@@ -152,8 +157,18 @@ export default function DentistSharingPage() {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch sharing status');
+      }
+      
       const data = await response.json();
-      const activeShare = data.shares?.find((s: any) => s.isActive);
+      
+      if (!data || !data.shares || !Array.isArray(data.shares)) {
+        throw new Error('Invalid response from server');
+      }
+      
+      const activeShare = data.shares.find((s: any) => s.isActive);
       
       if (activeShare) {
         const revokeResponse = await fetch(`/api/school/parent/child/${childId}/dentist/revoke`, {

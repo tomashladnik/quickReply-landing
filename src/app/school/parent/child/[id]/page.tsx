@@ -11,8 +11,8 @@ type ScanResult = 'all_good' | 'needs_attention' | 'concern';
 
 interface ScanData {
   id: string;
-  date: string;
-  result: ScanResult;
+  date: string | null;
+  result: ScanResult | null;
   childName: string;
   school: string;
   classroom: string;
@@ -50,14 +50,19 @@ export default function ChildResultPage() {
         }
 
         const data = await response.json();
-        if (data.latestScan) {
+        
+        if (!data || !data.name) {
+          throw new Error('Invalid response from server');
+        }
+        
+        if (data.latestScan && data.latestScan.scanDate) {
           setScanData({
             id: childId,
             date: data.latestScan.scanDate,
-            result: data.latestScan.category,
+            result: data.latestScan.category || null,
             childName: data.name,
-            school: data.school,
-            classroom: data.className || data.grade,
+            school: data.school || 'Unknown School',
+            classroom: data.className || data.grade || '',
           });
         } else {
           setScanData({
@@ -65,12 +70,14 @@ export default function ChildResultPage() {
             date: null,
             result: null,
             childName: data.name,
-            school: data.school,
-            classroom: data.className || data.grade,
+            school: data.school || 'Unknown School',
+            classroom: data.className || data.grade || '',
           });
         }
       } catch (err: any) {
         console.error('Error fetching scan data:', err);
+        // Set scanData to null to show error state
+        setScanData(null);
       } finally {
         setIsLoading(false);
       }
@@ -79,7 +86,21 @@ export default function ChildResultPage() {
     fetchScanData();
   }, [childId, router]);
 
-  const getResultConfig = (result: ScanResult) => {
+  const getResultConfig = (result: ScanResult | null) => {
+    if (!result) {
+      return {
+        icon: Calendar,
+        label: 'No Scans Yet',
+        color: 'text-gray-500',
+        bgColor: 'bg-gray-50',
+        borderColor: 'border-gray-200',
+        explanation: {
+          title: 'No scan results available',
+          body: "Your child hasn't completed any tooth check scans yet. Once a scan is completed, the results will appear here.",
+        },
+      };
+    }
+    
     switch (result) {
       case 'all_good':
         return {
@@ -120,12 +141,25 @@ export default function ChildResultPage() {
     }
   };
 
-  if (isLoading || !scanData) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!scanData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Child not found or error loading data.</p>
+          <Button onClick={() => router.push('/school/parent/dashboard')}>
+            Back to Dashboard
+          </Button>
         </div>
       </div>
     );
@@ -181,10 +215,12 @@ export default function ChildResultPage() {
             <CardTitle className="text-3xl mb-2">
               Result: {config.label}
             </CardTitle>
-            <CardDescription className="flex items-center justify-center gap-2 mt-2">
-              <Calendar className="w-4 h-4" />
-              <span>Scan Date: {new Date(scanData.date).toLocaleDateString()}</span>
-            </CardDescription>
+            {scanData.date && (
+              <CardDescription className="flex items-center justify-center gap-2 mt-2">
+                <Calendar className="w-4 h-4" />
+                <span>Scan Date: {new Date(scanData.date).toLocaleDateString()}</span>
+              </CardDescription>
+            )}
           </CardHeader>
         </Card>
 

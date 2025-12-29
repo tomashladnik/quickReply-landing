@@ -49,13 +49,31 @@ export default function ParentSettingsPage() {
         }
 
         const data = await response.json();
-        setEmail(data.email);
-        setPhone(data.phone);
-        setConsentStatus({
-          active: data.children.some((c: any) => c.consentGiven),
-          lastUpdated: data.children[0]?.consentDate || null,
-          children: data.children.map((c: any) => ({ id: c.id, name: c.name, consentGiven: c.consentGiven })),
-        });
+        
+        if (!data) {
+          throw new Error('Invalid response from server');
+        }
+        
+        setEmail(data.email || '');
+        setPhone(data.phone || '');
+        
+        if (!data.children || !Array.isArray(data.children)) {
+          setConsentStatus({
+            active: false,
+            lastUpdated: null,
+            children: [],
+          });
+        } else {
+          setConsentStatus({
+            active: data.children.some((c: any) => c.consentGiven),
+            lastUpdated: data.children[0]?.consentDate || null,
+            children: data.children.map((c: any) => ({ 
+              id: c.id, 
+              name: c.name || 'Unknown', 
+              consentGiven: c.consentGiven || false 
+            })),
+          });
+        }
       } catch (err: any) {
         console.error('Error fetching settings:', err);
       } finally {
@@ -104,12 +122,14 @@ export default function ParentSettingsPage() {
         }
       }
 
-      setConsentStatus({
-        ...consentStatus!,
-        active: false,
-        lastUpdated: new Date().toISOString(),
-        children: consentStatus!.children.map(c => ({ ...c, consentGiven: false })),
-      });
+      if (consentStatus) {
+        setConsentStatus({
+          ...consentStatus,
+          active: false,
+          lastUpdated: new Date().toISOString(),
+          children: consentStatus.children.map(c => ({ ...c, consentGiven: false })),
+        });
+      }
       alert('Consent has been revoked. Your children will no longer be able to participate.');
     } catch (err: any) {
       alert(err.message || 'Failed to revoke consent');
@@ -229,7 +249,7 @@ export default function ParentSettingsPage() {
                   </p>
                   {consentStatus?.children && consentStatus.children.length > 0 && (
                     <p className="text-sm text-gray-600 mt-1">
-                      Children enrolled: {consentStatus.children.map(c => c.name).join(', ')}
+                      Children enrolled: {consentStatus?.children?.map(c => c.name).join(', ') || 'None'}
                     </p>
                   )}
                 </div>

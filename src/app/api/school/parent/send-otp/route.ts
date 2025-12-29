@@ -17,10 +17,17 @@ export async function POST(req: NextRequest) {
     const otpCode = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Find or create parent
-    let parent = await prisma.parent.findUnique({
-      where: { email },
-    });
+    // Find or create parent by email or phone
+    let parent = null;
+    if (email) {
+      parent = await prisma.parent.findUnique({
+        where: { email },
+      });
+    } else if (phone) {
+      parent = await prisma.parent.findFirst({
+        where: { phone },
+      });
+    }
 
     if (parent) {
       // Update OTP
@@ -29,15 +36,18 @@ export async function POST(req: NextRequest) {
         data: {
           otpCode,
           otpExpiresAt: expiresAt,
+          email: email || parent.email,
           phone: phone || parent.phone,
         },
       });
     } else {
       // Create new parent (will complete enrollment later)
-      // Note: name is required in schema, so we use a placeholder
+      // Note: name and email are required in schema
+      // If only phone is provided, use a unique placeholder email that will be updated during enrollment
+      const placeholderEmail = email || `phone-${phone.replace(/\D/g, '')}@temp.local`;
       parent = await prisma.parent.create({
         data: {
-          email,
+          email: placeholderEmail,
           phone: phone || '',
           name: 'Pending Enrollment', // Will be updated during enrollment
           otpCode,
@@ -48,7 +58,8 @@ export async function POST(req: NextRequest) {
 
     // TODO: Send OTP via email/SMS
     // For now, we'll log it (remove in production)
-    console.log(`OTP for ${email}: ${otpCode}`);
+    const identifier = email || phone;
+    console.log(`OTP for ${identifier}: ${otpCode}`);
 
     return NextResponse.json({
       success: true,

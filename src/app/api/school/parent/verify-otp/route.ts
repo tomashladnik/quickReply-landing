@@ -8,16 +8,31 @@ export async function POST(req: NextRequest) {
   try {
     const { email, phone, otp } = await req.json();
 
-    if (!email || !otp) {
+    if (!otp) {
       return NextResponse.json(
-        { error: 'Email and OTP are required' },
+        { error: 'OTP is required' },
         { status: 400 }
       );
     }
 
-    const parent = await prisma.parent.findUnique({
-      where: { email },
-    });
+    if (!email && !phone) {
+      return NextResponse.json(
+        { error: 'Email or phone is required' },
+        { status: 400 }
+      );
+    }
+
+    // Find parent by email or phone
+    let parent = null;
+    if (email) {
+      parent = await prisma.parent.findUnique({
+        where: { email },
+      });
+    } else if (phone) {
+      parent = await prisma.parent.findFirst({
+        where: { phone },
+      });
+    }
 
     if (!parent) {
       return NextResponse.json(

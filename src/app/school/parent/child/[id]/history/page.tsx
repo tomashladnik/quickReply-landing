@@ -48,14 +48,21 @@ export default function ScanHistoryPage() {
         }
 
         const data = await response.json();
+        
+        if (!data || !data.child || !data.child.name) {
+          throw new Error('Invalid response from server');
+        }
+        
         setChildName(data.child.name);
-        setHistory(data.scans.map((scan: any) => ({
+        setHistory((data.scans || []).map((scan: any) => ({
           id: scan.id,
           date: scan.scanDate,
           result: scan.category,
         })));
       } catch (err: any) {
         console.error('Error fetching history:', err);
+        setHistory([]);
+        setChildName('');
       } finally {
         setIsLoading(false);
       }
@@ -260,7 +267,7 @@ export default function ScanHistoryPage() {
             className="w-full sm:w-auto"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Result
+            Back to Details
           </Button>
         </div>
       </main>
