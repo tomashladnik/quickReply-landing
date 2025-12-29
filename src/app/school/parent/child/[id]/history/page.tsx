@@ -25,19 +25,44 @@ export default function ScanHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch history from API
-    setTimeout(() => {
-      setChildName('Emma Doe');
-      setHistory([
-        { id: '1', date: '2024-01-15', result: 'all_good' },
-        { id: '2', date: '2023-12-15', result: 'all_good' },
-        { id: '3', date: '2023-11-15', result: 'needs_attention' },
-        { id: '4', date: '2023-10-15', result: 'all_good' },
-        { id: '5', date: '2023-09-15', result: 'all_good' },
-      ]);
-      setIsLoading(false);
-    }, 500);
-  }, [childId]);
+    const token = localStorage.getItem('parent_token');
+    if (!token) {
+      router.push('/school/parent');
+      return;
+    }
+
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch(`/api/school/parent/child/${childId}/history`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/school/parent');
+            return;
+          }
+          throw new Error('Failed to fetch history');
+        }
+
+        const data = await response.json();
+        setChildName(data.child.name);
+        setHistory(data.scans.map((scan: any) => ({
+          id: scan.id,
+          date: scan.scanDate,
+          result: scan.category,
+        })));
+      } catch (err: any) {
+        console.error('Error fetching history:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [childId, router]);
 
   const getResultConfig = (result: ScanResult) => {
     switch (result) {

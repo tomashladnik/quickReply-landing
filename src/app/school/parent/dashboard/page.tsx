@@ -23,9 +23,10 @@ interface Child {
   id: string;
   name: string;
   school: string;
-  classroom: string;
+  className: string;
+  grade: string;
   latestScanDate: string | null;
-  latestResult: ScanResult | null;
+  latestCategory: ScanResult | null;
 }
 
 export default function ParentDashboardPage() {
@@ -34,30 +35,41 @@ export default function ParentDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch children from API
-    // For now, use mock data
-    setTimeout(() => {
-      setChildren([
-        {
-          id: '1',
-          name: 'Emma Doe',
-          school: 'Parkview Elementary',
-          classroom: 'Grade 3 - Room 2',
-          latestScanDate: '2024-01-15',
-          latestResult: 'all_good',
-        },
-        {
-          id: '2',
-          name: 'Lucas Doe',
-          school: 'Westview Middle School',
-          classroom: 'Grade 6 - Room 5',
-          latestScanDate: '2024-01-10',
-          latestResult: 'needs_attention',
-        },
-      ]);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+    const token = localStorage.getItem('parent_token');
+    if (!token) {
+      router.push('/school/parent');
+      return;
+    }
+
+    const fetchChildren = async () => {
+      try {
+        const response = await fetch('/api/school/parent/children', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.removeItem('parent_token');
+            localStorage.removeItem('parent_id');
+            router.push('/school/parent');
+            return;
+          }
+          throw new Error('Failed to fetch children');
+        }
+
+        const data = await response.json();
+        setChildren(data.children || []);
+      } catch (err: any) {
+        console.error('Error fetching children:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchChildren();
+  }, [router]);
 
   const getResultIcon = (result: ScanResult | null) => {
     if (!result) return null;
@@ -192,18 +204,18 @@ export default function ParentDashboardPage() {
                       <CardDescription className="flex items-center gap-2 mt-1">
                         <span>{child.school}</span>
                         <span>•</span>
-                        <span>{child.classroom}</span>
+                        <span>{child.className || child.grade}</span>
                       </CardDescription>
                     </div>
-                    {getResultIcon(child.latestResult)}
+                    {getResultIcon(child.latestCategory)}
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getResultColor(child.latestResult)}`}>
-                          {getResultLabel(child.latestResult)}
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getResultColor(child.latestCategory)}`}>
+                          {getResultLabel(child.latestCategory)}
                         </span>
                       </div>
                       {child.latestScanDate && (

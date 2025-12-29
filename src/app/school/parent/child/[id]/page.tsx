@@ -27,19 +27,57 @@ export default function ChildResultPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch scan data from API
-    setTimeout(() => {
-      setScanData({
-        id: childId,
-        date: '2024-01-15',
-        result: 'all_good',
-        childName: 'Emma Doe',
-        school: 'Parkview Elementary',
-        classroom: 'Grade 3 - Room 2',
-      });
-      setIsLoading(false);
-    }, 500);
-  }, [childId]);
+    const token = localStorage.getItem('parent_token');
+    if (!token) {
+      router.push('/school/parent');
+      return;
+    }
+
+    const fetchScanData = async () => {
+      try {
+        const response = await fetch(`/api/school/parent/child/${childId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/school/parent');
+            return;
+          }
+          throw new Error('Failed to fetch scan data');
+        }
+
+        const data = await response.json();
+        if (data.latestScan) {
+          setScanData({
+            id: childId,
+            date: data.latestScan.scanDate,
+            result: data.latestScan.category,
+            childName: data.name,
+            school: data.school,
+            classroom: data.className || data.grade,
+          });
+        } else {
+          setScanData({
+            id: childId,
+            date: null,
+            result: null,
+            childName: data.name,
+            school: data.school,
+            classroom: data.className || data.grade,
+          });
+        }
+      } catch (err: any) {
+        console.error('Error fetching scan data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchScanData();
+  }, [childId, router]);
 
   const getResultConfig = (result: ScanResult) => {
     switch (result) {

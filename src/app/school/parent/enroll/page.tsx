@@ -32,27 +32,74 @@ export default function ParentEnrollPage() {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Implement API call to verify school code
-    // For now, simulate the flow
-    setTimeout(() => {
-      // Mock school name based on code
-      setSchoolName(schoolCode.includes('PS') ? 'Parkview Elementary' : 
-                    schoolCode.includes('WEST') ? 'Westview Middle School' : 
-                    'Sample School');
+    try {
+      const response = await fetch('/api/school/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: schoolCode }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid school code');
+      }
+
+      setSchoolName(data.schoolName);
       setStep('form');
+    } catch (err: any) {
+      alert(err.message || 'Invalid school code');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Implement API call to submit enrollment
-    setTimeout(() => {
+    try {
+      // Extract grade from classroom if format is "Grade X - Room Y" or just "Grade X"
+      const gradeMatch = classroom.match(/Grade\s+(\d+)/i) || classroom.match(/^(\d+)/);
+      const grade = gradeMatch ? gradeMatch[1] : '';
+      const roomMatch = classroom.match(/Room\s+(\w+)/i);
+      const room = roomMatch ? roomMatch[1] : classroom.replace(/Grade\s+\d+\s*-?\s*/i, '').trim() || null;
+
+      const response = await fetch('/api/school/parent/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schoolCode,
+          parentName,
+          childName,
+          grade: grade || '',
+          classroom: room || classroom,
+          parentEmail,
+          parentPhone,
+          consentSignature: digitalSignature,
+          shareWithDentist,
+          dentistEmail: shareWithDentist ? dentistEmail : '',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Enrollment failed');
+      }
+
+      // Store token and redirect to dashboard
+      if (data.token) {
+        localStorage.setItem('parent_token', data.token);
+        localStorage.setItem('parent_id', data.parentId);
+      }
+
       setStep('success');
+    } catch (err: any) {
+      alert(err.message || 'Enrollment failed');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   if (step === 'success') {

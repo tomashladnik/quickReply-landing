@@ -32,35 +32,82 @@ export default function ParentLoginPage() {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Implement API call to send OTP/magic link
-    // For now, simulate the flow
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/school/parent/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, phone }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+
       setAuthStep('otp');
+    } catch (err: any) {
+      alert(err.message || 'Something went wrong');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleOTPSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Implement API call to verify OTP
-    // For now, simulate the flow
-    setTimeout(() => {
-      localStorage.setItem('parent_token', 'demo_token');
+    try {
+      const response = await fetch('/api/school/parent/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, phone, otp }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid OTP');
+      }
+
+      // Store token in localStorage
+      if (data.token) {
+        localStorage.setItem('parent_token', data.token);
+        localStorage.setItem('parent_id', data.parentId);
+      }
+
       setAuthStep('verified');
-      setIsLoading(false);
       setTimeout(() => {
         router.push('/school/parent/dashboard');
       }, 1000);
-    }, 1000);
+    } catch (err: any) {
+      alert(err.message || 'Invalid OTP');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleMagicLink = async () => {
     setIsLoading(true);
-    // TODO: Implement magic link API call
-    alert('Magic link sent! Check your email.');
-    setIsLoading(false);
+    try {
+      const response = await fetch('/api/school/parent/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, phone }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send magic link');
+      }
+
+      alert('Magic link sent! Check your email.');
+    } catch (err: any) {
+      alert(err.message || 'Failed to send magic link');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

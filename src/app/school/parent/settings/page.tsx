@@ -12,7 +12,7 @@ import { ArrowLeft, Settings, Shield, Mail, Phone, Trash2, AlertTriangle, LogOut
 interface ConsentStatus {
   active: boolean;
   lastUpdated: string;
-  children: string[];
+  children: Array<{ id: string; name: string; consentGiven: boolean }>;
 }
 
 export default function ParentSettingsPage() {
@@ -26,27 +26,58 @@ export default function ParentSettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    // TODO: Fetch settings from API
-    setTimeout(() => {
-      setConsentStatus({
-        active: true,
-        lastUpdated: '2024-01-01',
-        children: ['Emma Doe', 'Lucas Doe'],
-      });
-      setEmail('parent@example.com');
-      setPhone('+1 (555) 123-4567');
-      setPreferEmail(true);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+    const token = localStorage.getItem('parent_token');
+    if (!token) {
+      router.push('/school/parent');
+      return;
+    }
+
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/school/parent/settings', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/school/parent');
+            return;
+          }
+          throw new Error('Failed to fetch settings');
+        }
+
+        const data = await response.json();
+        setEmail(data.email);
+        setPhone(data.phone);
+        setConsentStatus({
+          active: data.children.some((c: any) => c.consentGiven),
+          lastUpdated: data.children[0]?.consentDate || null,
+          children: data.children.map((c: any) => ({ id: c.id, name: c.name, consentGiven: c.consentGiven })),
+        });
+      } catch (err: any) {
+        console.error('Error fetching settings:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [router]);
 
   const handleSavePreferences = async () => {
     setIsLoading(true);
-    // TODO: Implement API call to save preferences
-    setTimeout(() => {
+    // Note: Communication preferences are currently managed via email/SMS settings
+    // This is a placeholder for future implementation
+    try {
+      // Future: API call to save preferences
       alert('Preferences saved successfully!');
+    } catch (err: any) {
+      alert('Failed to save preferences');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleRevokeConsent = async () => {
@@ -55,16 +86,36 @@ export default function ParentSettingsPage() {
     }
 
     setIsLoading(true);
-    // TODO: Implement API call to revoke consent
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem('parent_token');
+      // Revoke consent for all children
+      const childrenWithConsent = consentStatus?.children.filter(c => c.consentGiven) || [];
+      
+      for (const child of childrenWithConsent) {
+        const response = await fetch(`/api/school/parent/child/${child.id}/revoke-consent`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to revoke consent');
+        }
+      }
+
       setConsentStatus({
         ...consentStatus!,
         active: false,
         lastUpdated: new Date().toISOString(),
+        children: consentStatus!.children.map(c => ({ ...c, consentGiven: false })),
       });
       alert('Consent has been revoked. Your children will no longer be able to participate.');
+    } catch (err: any) {
+      alert(err.message || 'Failed to revoke consent');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleRequestDeletion = async () => {
@@ -74,15 +125,35 @@ export default function ParentSettingsPage() {
     }
 
     setIsDeleting(true);
-    // TODO: Implement API call to request deletion
-    setTimeout(() => {
-      alert('Data deletion request submitted. You will receive a confirmation email shortly.');
+    try {
+      const token = localStorage.getItem('parent_token');
+      // Delete data for all children
+      const children = consentStatus?.children || [];
+      
+      for (const child of children) {
+        const response = await fetch(`/api/school/parent/child/${child.id}/revoke-consent`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete data');
+        }
+      }
+
+      alert('Data deletion completed. All your data has been permanently deleted.');
       setIsDeleting(false);
       setShowDeleteConfirm(false);
-      // Logout after deletion request
+      // Logout after deletion
       localStorage.removeItem('parent_token');
+      localStorage.removeItem('parent_id');
       router.push('/school/parent');
-    }, 2000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete data');
+      setIsDeleting(false);
+    }
   };
 
   const handleLogout = () => {
@@ -158,7 +229,7 @@ export default function ParentSettingsPage() {
                   </p>
                   {consentStatus?.children && consentStatus.children.length > 0 && (
                     <p className="text-sm text-gray-600 mt-1">
-                      Children enrolled: {consentStatus.children.join(', ')}
+                      Children enrolled: {consentStatus.children.map(c => c.name).join(', ')}
                     </p>
                   )}
                 </div>

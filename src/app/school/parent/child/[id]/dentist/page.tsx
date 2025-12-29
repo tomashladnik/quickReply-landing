@@ -37,27 +37,91 @@ export default function DentistSharingPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch sharing status from API
-    setTimeout(() => {
-      setChildName('Emma Doe');
-      setSharing({
-        status: 'not_shared',
-        dentistEmail: null,
-        dentistName: null,
-        invitedAt: null,
-        activatedAt: null,
-      });
-      setIsLoadingData(false);
-    }, 500);
-  }, [childId]);
+    const token = localStorage.getItem('parent_token');
+    if (!token) {
+      router.push('/school/parent');
+      return;
+    }
+
+    const fetchSharing = async () => {
+      try {
+        const response = await fetch(`/api/school/parent/child/${childId}/dentist`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/school/parent');
+            return;
+          }
+          throw new Error('Failed to fetch sharing status');
+        }
+
+        const data = await response.json();
+        setChildName(data.child.name);
+        
+        if (data.shares && data.shares.length > 0) {
+          const activeShare = data.shares.find((s: any) => s.isActive);
+          if (activeShare) {
+            setSharing({
+              status: 'active',
+              dentistEmail: activeShare.dentistEmail,
+              dentistName: activeShare.dentistName,
+              invitedAt: activeShare.createdAt,
+              activatedAt: activeShare.activatedAt,
+            });
+          } else {
+            setSharing({
+              status: 'revoked',
+              dentistEmail: data.shares[0]?.dentistEmail || null,
+              dentistName: data.shares[0]?.dentistName || null,
+              invitedAt: data.shares[0]?.createdAt || null,
+              activatedAt: null,
+            });
+          }
+        } else {
+          setSharing({
+            status: 'not_shared',
+            dentistEmail: null,
+            dentistName: null,
+            invitedAt: null,
+            activatedAt: null,
+          });
+        }
+      } catch (err: any) {
+        console.error('Error fetching sharing status:', err);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchSharing();
+  }, [childId, router]);
 
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dentistEmail) return;
 
     setIsLoading(true);
-    // TODO: Implement API call to send invite
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem('parent_token');
+      const response = await fetch(`/api/school/parent/child/${childId}/dentist/share`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dentistEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send invite');
+      }
+
       setSharing({
         status: 'invite_sent',
         dentistEmail: dentistEmail,
@@ -66,8 +130,12 @@ export default function DentistSharingPage() {
         activatedAt: null,
       });
       setDentistEmail('');
+      alert('Invite sent successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to send invite');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleRevokeAccess = async () => {
@@ -76,30 +144,80 @@ export default function DentistSharingPage() {
     }
 
     setIsLoading(true);
-    // TODO: Implement API call to revoke access
-    setTimeout(() => {
-      setSharing({
-        status: 'revoked',
-        dentistEmail: sharing.dentistEmail,
-        dentistName: sharing.dentistName,
-        invitedAt: sharing.invitedAt,
-        activatedAt: null,
+    try {
+      const token = localStorage.getItem('parent_token');
+      // Find the active share ID - you may need to store this in state
+      const response = await fetch(`/api/school/parent/child/${childId}/dentist`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
+      const data = await response.json();
+      const activeShare = data.shares?.find((s: any) => s.isActive);
+      
+      if (activeShare) {
+        const revokeResponse = await fetch(`/api/school/parent/child/${childId}/dentist/revoke`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ shareId: activeShare.id }),
+        });
+
+        if (!revokeResponse.ok) {
+          throw new Error('Failed to revoke access');
+        }
+
+        setSharing({
+          status: 'revoked',
+          dentistEmail: activeShare.dentistEmail,
+          dentistName: activeShare.dentistName || null,
+          invitedAt: activeShare.createdAt,
+          activatedAt: null,
+        });
+        alert('Access revoked successfully');
+      } else {
+        throw new Error('No active share found');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to revoke access');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleReEnable = async () => {
     setIsLoading(true);
-    // TODO: Implement API call to re-enable sharing
-    setTimeout(() => {
-      setSharing({
-        ...sharing,
-        status: 'active',
-        activatedAt: new Date().toISOString(),
-      });
+    try {
+      const token = localStorage.getItem('parent_token');
+      // Re-enable sharing by creating a new share with the same dentist
+      if (sharing.dentistEmail) {
+        const response = await fetch(`/api/school/parent/child/${childId}/dentist/share`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ dentistEmail: sharing.dentistEmail }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to re-enable sharing');
+        }
+
+        setSharing({
+          ...sharing,
+          status: 'active',
+          activatedAt: new Date().toISOString(),
+        });
+        alert('Sharing re-enabled successfully');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to re-enable sharing');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   if (isLoadingData) {

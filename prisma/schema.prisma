@@ -88,3 +88,150 @@ model DemoScanLink {
 
   @@map("demo_scan_link")
 }
+
+// School deployment models (DentalScan V1)
+
+model School {
+  id          String       @id @default(cuid())
+  name        String
+  district    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  codes       SchoolCode[]
+  children    Child[]
+  classes     SchoolClass[]
+
+  @@map("school")
+}
+
+model SchoolCode {
+  id          String       @id @default(cuid())
+  code        String       @unique // e.g. "PS123-DSCAN"
+  school      School       @relation(fields: [schoolId], references: [id])
+  schoolId    String
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  expiresAt   DateTime?
+
+  @@map("school_code")
+}
+
+model SchoolClass {
+  id          String       @id @default(cuid())
+  name        String       // e.g. "Grade 3 - Room 2"
+  grade       String?
+  room        String?
+  school      School       @relation(fields: [schoolId], references: [id])
+  schoolId    String
+  createdAt   DateTime     @default(now())
+
+  children    Child[]
+
+  @@map("school_class")
+}
+
+model Parent {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  phone       String
+  passwordHash String?     // For future password auth, OTP for now
+  otpCode     String?
+  otpExpiresAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  children    Child[]
+  dentistShares DentistShare[]
+
+  @@map("parent")
+}
+
+model Child {
+  id          String       @id @default(cuid())
+  name        String
+  parent      Parent       @relation(fields: [parentId], references: [id])
+  parentId    String
+  school      School       @relation(fields: [schoolId], references: [id])
+  schoolId    String
+  class       SchoolClass? @relation(fields: [classId], references: [id])
+  classId     String?
+  grade       String?
+  dateOfBirth DateTime?
+  consentGiven Boolean     @default(false)
+  consentDate  DateTime?
+  consentSignature String? // Digital signature data
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  scans       SchoolScan[]
+  dentistShares DentistShare[]
+
+  @@map("child")
+}
+
+model SchoolScan {
+  id          String       @id @default(cuid())
+  child       Child        @relation(fields: [childId], references: [id])
+  childId     String
+  status      String       @default("submitted") // submitted | processing | completed
+  category    String?      // "all_good" | "needs_attention" | "concern"
+  imageUrls   Json?        // Array of image URLs
+  fullReport  Json?        // Full diagnostic report (dentist-only)
+  explanation String?      // Parent-friendly explanation
+  createdAt   DateTime     @default(now())
+  submittedAt DateTime?
+  completedAt DateTime?
+
+  @@map("school_scan")
+}
+
+model SchoolDentist {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  practice    String?
+  passwordHash String?
+  otpCode     String?
+  otpExpiresAt DateTime?
+  baaAccepted Boolean      @default(false)
+  baaAcceptedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  shares      DentistShare[]
+
+  @@map("school_dentist")
+}
+
+model DentistShare {
+  id          String       @id @default(cuid())
+  child       Child        @relation(fields: [childId], references: [id])
+  childId     String
+  parent      Parent       @relation(fields: [parentId], references: [id])
+  parentId    String
+  dentist     SchoolDentist @relation(fields: [dentistId], references: [id])
+  dentistId   String
+  inviteToken String       @unique
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  activatedAt DateTime?
+  revokedAt   DateTime?
+
+  @@map("dentist_share")
+}
+
+model AuditLog {
+  id          String       @id @default(cuid())
+  userId      String?      // Parent, Teacher, Admin, Dentist ID
+  userType    String       // "parent" | "teacher" | "admin" | "dentist"
+  action      String       // "login" | "view_scan" | "access_report" | etc.
+  resourceType String?     // "child" | "scan" | "report"
+  resourceId  String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  @@map("audit_log")
+}
