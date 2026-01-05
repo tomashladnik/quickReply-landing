@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 interface DentalScanNavProps {
-  activePage?: 'charity' | 'gyms' | 'schools' | 'privacy' | 'home';
+  activePage?: 'charity' | 'gyms' | 'schools' | 'employers' | 'privacy' | 'home';
   onOpenDemo?: () => void;
 }
 
@@ -76,6 +76,9 @@ export default function DentalScanNav({ activePage, onOpenDemo }: DentalScanNavP
           }`}
         >
           Gyms
+        </Link>
+        <Link href="/dentalscan/employers" className="font-medium text-black text-base hover:text-gray-600 transition-colors">
+          Employers
         </Link>
         <Link
           href="/dentalscan/privacy"
