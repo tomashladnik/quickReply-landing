@@ -66,9 +66,9 @@ export async function POST(req: NextRequest) {
       `[contact-sales] Dentist ${dentist.id} for phone ${phone} demoUrl=${demoUrl}`
     );
 
-    const smsMessage = `ReplyQuick (DentalScan): Hi ${name}, your secure upload link is ready.
+    const smsMessage = `ReplyQuick (DentalScan): Hi ${name}, your demo account is ready.
 
-Tap to complete your 5-step image submission: ${demoUrl}.
+Tap to access your demo account: ${demoUrl}.
 
 Reply STOP to opt out.`;
 
