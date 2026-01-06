@@ -1,3 +1,4 @@
+// src/app/api/dentalscan/contact-sales/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createDentalLead } from "@/lib/dental/dentalLead";
 import { subscribeDentalLeadToConvertKit } from "@/lib/marketing/convertkit";
@@ -6,15 +7,34 @@ import { prisma } from "@/lib/prisma";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+function safeNameFromNotes(notes?: string | null) {
+  if (!notes) return "there";
+  const match = notes.match(/Name:\s*([^|]+)/i);
+  const n = match?.[1]?.trim();
+  return n && n.length > 0 ? n : "there";
+}
+
+function normalizePhone(phone?: string | null) {
+  if (!phone) return "";
+  const p = phone.trim();
+  if (p.startsWith("+")) return p;
+  const digits = p.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return p;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const phone = body.phone as string | undefined;
+    const phoneRaw = body.phone as string | undefined;
     const email = body.email as string | undefined;
     const pagePath = body.pagePath as string | undefined;
     const notes = body.notes as string | undefined;
-    const name = notes?.split('Name: ')[1]?.split(' |')[0] || "there";
+
+    const phone = normalizePhone(phoneRaw);
+    const name = safeNameFromNotes(notes);
 
     if (!phone) {
       return NextResponse.json(
@@ -32,33 +52,35 @@ export async function POST(req: NextRequest) {
     });
 
     if (email) {
-        await subscribeDentalLeadToConvertKit(email, "contact_sales");
+      await subscribeDentalLeadToConvertKit(email, "contact_sales");
     }
 
-    // Create or find demo dentist for dashboard link
     let dentist = await prisma.demoDentist.findFirst({
-      where: { phone: phone },
+      where: { phone },
     });
 
     if (!dentist) {
       dentist = await prisma.demoDentist.create({
         data: {
-          name: name,
-          phone: phone,
-          email: email,
+          name,
+          phone,
+          email,
         },
       });
     }
 
-    const demoUrl = `${APP_URL}/dentist-dashboard?demoId=${encodeURIComponent(dentist.id)}`;
+    const demoUrl = `${APP_URL}/dentist-dashboard?demoId=${encodeURIComponent(
+      dentist.id
+    )}`;
 
-    console.log(`Created/found dentist with ID: ${dentist.id} for phone: ${phone}`);
+    console.log(
+      `Created/found dentist with ID: ${dentist.id} for phone: ${phone}`
+    );
     console.log(`Generated demo URL: ${demoUrl}`);
 
-    // Send SMS notification
-    const smsMessage = `ReplyQuick (DentalScan): Hi ${name}, your secure upload link is ready. 
+    const smsMessage = `ReplyQuick (DentalScan): Hi ${name}, your demo account is ready.
 
-Tap to complete your 5-step image submission: ${demoUrl}. 
+Tap to access your demo account: ${demoUrl}.
 
 Reply STOP to opt out.`;
 
@@ -67,13 +89,12 @@ Reply STOP to opt out.`;
       console.log(`SMS sent successfully to ${phone}`);
     } catch (smsError) {
       console.warn("SMS failed to send:", smsError);
-      // Don't fail the request if SMS fails
     }
 
-    return NextResponse.json({ 
-      ok: true, 
+    return NextResponse.json({
+      ok: true,
       dentistId: dentist.id,
-      demoUrl: demoUrl
+      demoUrl,
     });
   } catch (err) {
     console.error("contact-sales error", err);
