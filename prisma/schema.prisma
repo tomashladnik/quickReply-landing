@@ -100,3 +100,105 @@ model PartnerWithUs {
 
   @@map("PartnerWithUs")
 }
+
+// School admin portal models
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  teachers  Teacher[]
+  classes   SchoolClass[]
+  students  Student[]
+  auditLogs AuditLog[]
+
+  @@map("school")
+}
+
+model Teacher {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  school       School       @relation(fields: [schoolId], references: [id])
+  schoolId     String
+  createdAt    DateTime     @default(now())
+
+  classes      SchoolClass[]
+
+  @@map("teacher")
+}
+
+model SchoolClass {
+  id          String           @id @default(cuid())
+  name        String
+  grade       String?
+  teacher     Teacher          @relation(fields: [teacherId], references: [id])
+  teacherId   String
+  school      School           @relation(fields: [schoolId], references: [id])
+  schoolId    String
+  createdAt   DateTime         @default(now())
+
+  enrollments ClassEnrollment[]
+  auditLogs   AuditLog[]
+
+  @@map("school_class")
+}
+
+model Student {
+  id         String           @id @default(cuid())
+  firstName  String
+  lastName   String
+  school     School           @relation(fields: [schoolId], references: [id])
+  schoolId   String
+  createdAt  DateTime         @default(now())
+
+  enrollments ClassEnrollment[]
+  auditLogs   AuditLog[]
+
+  @@map("student")
+}
+
+model ClassEnrollment {
+  id              String      @id @default(cuid())
+  class           SchoolClass @relation(fields: [classId], references: [id])
+  classId         String
+  student         Student     @relation(fields: [studentId], references: [id])
+  studentId       String
+  consent         Boolean     @default(false)
+  scanStatus      String      @default("not_completed")
+  scanCompletedAt DateTime?
+  createdAt       DateTime    @default(now())
+
+  @@unique([classId, studentId])
+  @@index([classId])
+  @@index([studentId])
+  @@index([scanStatus])
+  @@map("class_enrollment")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String
+  actorId      String?
+  actorType    String?
+  school       School?  @relation(fields: [schoolId], references: [id])
+  schoolId     String?
+  class        SchoolClass? @relation(fields: [classId], references: [id])
+  classId      String?
+  student      Student? @relation(fields: [studentId], references: [id])
+  studentId    String?
+  resourceType String?
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([classId])
+  @@index([studentId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
