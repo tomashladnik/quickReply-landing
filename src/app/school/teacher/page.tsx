@@ -15,7 +15,6 @@ export default function TeacherLoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem('teacher_token');
     if (token) {

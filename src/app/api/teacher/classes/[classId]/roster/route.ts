@@ -1,4 +1,3 @@
-// src/app/api/teacher/classes/[classId]/roster/route.ts
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -16,10 +15,21 @@ export async function GET(
     const { classId } = await context.params;
 
     const classRecord = await prisma.schoolClass.findFirst({
-      where: { id: classId, teacherId: auth.teacher.id },
+      where: {
+        id: classId,
+        teacherId: auth.teacher.id,
+      },
       include: {
         enrollments: {
-          include: { student: true },
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
           orderBy: { createdAt: "asc" },
         },
       },
@@ -29,13 +39,15 @@ export async function GET(
       return NextResponse.json({ error: "Class not found" }, { status: 404 });
     }
 
-    const students = classRecord.enrollments.map((enrollment) => ({
-      id: enrollment.student.id,
-      name: `${enrollment.student.firstName} ${enrollment.student.lastName}`.trim(),
-      consent: enrollment.consent,
-      scanStatus: enrollment.scanStatus,
-      scanned: enrollment.scanStatus === "completed",
-    }));
+const students = classRecord.enrollments.map((e) => ({
+  id: e.student?.id ?? e.id,
+  name: e.student
+    ? `${e.student.firstName} ${e.student.lastName}`.trim()
+    : "Unknown Student",
+  consent: e.consent,
+  scanStatus: e.scanStatus,
+}));
+
 
     return NextResponse.json({
       class: {

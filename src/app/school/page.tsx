@@ -46,7 +46,6 @@ export default function SchoolPortalPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-3">
@@ -65,7 +64,6 @@ export default function SchoolPortalPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
@@ -76,7 +74,6 @@ export default function SchoolPortalPage() {
           </p>
         </div>
 
-        {/* Portal Options Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {portalOptions.map((option) => {
             const Icon = option.icon;
@@ -114,7 +111,6 @@ export default function SchoolPortalPage() {
           })}
         </div>
 
-        {/* Footer Note */}
         <div className="mt-8 sm:mt-12 text-center">
           <p className="text-sm text-gray-500">
             Secure, compliant, and designed for school environments
