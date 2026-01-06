@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/app/api/dentalscan/contact-sales/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createDentalLead } from "@/lib/dental/dentalLead";
 import { subscribeDentalLeadToConvertKit } from "@/lib/marketing/convertkit";
@@ -14,7 +16,9 @@ export async function POST(req: NextRequest) {
     const email = body.email as string | undefined;
     const pagePath = body.pagePath as string | undefined;
     const notes = body.notes as string | undefined;
-    const name = notes?.split('Name: ')[1]?.split(' |')[0] || "there";
+
+    const name =
+      notes?.split("Name: ")[1]?.split(" |")[0]?.trim() || "there";
 
     if (!phone) {
       return NextResponse.json(
@@ -32,48 +36,73 @@ export async function POST(req: NextRequest) {
     });
 
     if (email) {
+      try {
         await subscribeDentalLeadToConvertKit(email, "contact_sales");
+      } catch (e) {
+        console.warn("[contact-sales] ConvertKit subscribe failed:", e);
+      }
     }
 
-    // Create or find demo dentist for dashboard link
+    // Create or find demo dentist
     let dentist = await prisma.demoDentist.findFirst({
-      where: { phone: phone },
+      where: { phone },
     });
 
     if (!dentist) {
       dentist = await prisma.demoDentist.create({
         data: {
-          name: name,
-          phone: phone,
-          email: email,
+          name,
+          phone,
+          email: email || null,
         },
       });
     }
 
-    const demoUrl = `${APP_URL}/dentist-dashboard?demoId=${encodeURIComponent(dentist.id)}`;
+    const demoUrl = `${APP_URL}/dentist-dashboard?demoId=${encodeURIComponent(
+      dentist.id
+    )}`;
 
-    console.log(`Created/found dentist with ID: ${dentist.id} for phone: ${phone}`);
-    console.log(`Generated demo URL: ${demoUrl}`);
+    console.log(
+      `[contact-sales] Dentist ${dentist.id} for phone ${phone} demoUrl=${demoUrl}`
+    );
 
-    // Send SMS notification
-    const smsMessage = `ReplyQuick (DentalScan): Hi ${name}, your secure upload link is ready. 
+    const smsMessage = `ReplyQuick (DentalScan): Hi ${name}, your secure upload link is ready.
 
-Tap to complete your 5-step image submission: ${demoUrl}. 
+Tap to complete your 5-step image submission: ${demoUrl}.
 
 Reply STOP to opt out.`;
 
+    // ✅ IMPORTANT: sendDemoSms returns success/failure — it does NOT throw in most cases
+    let smsSent = false;
+    let smsError: string | null = null;
+
     try {
-      await sendDemoSms(phone, smsMessage);
-      console.log(`SMS sent successfully to ${phone}`);
-    } catch (smsError) {
-      console.warn("SMS failed to send:", smsError);
-      // Don't fail the request if SMS fails
+      const smsRes: any = await sendDemoSms(phone, smsMessage);
+
+      smsSent = smsRes?.success === true || smsRes?.ok === true;
+
+      if (!smsSent) {
+        smsError =
+          smsRes?.error ||
+          smsRes?.message ||
+          "SMS failed (unknown error)";
+        console.warn("[contact-sales] SMS not sent:", smsRes);
+      } else {
+        console.log(`[contact-sales] SMS sent successfully to ${phone}`);
+      }
+    } catch (e: any) {
+      smsSent = false;
+      smsError = e?.message || "SMS failed (exception)";
+      console.warn("[contact-sales] SMS send threw error:", e);
     }
 
-    return NextResponse.json({ 
-      ok: true, 
+    // ✅ Always return demoUrl so frontend can show copy fallback if smsSent=false
+    return NextResponse.json({
+      ok: true,
       dentistId: dentist.id,
-      demoUrl: demoUrl
+      demoUrl,
+      smsSent,
+      smsError,
     });
   } catch (err) {
     console.error("contact-sales error", err);
