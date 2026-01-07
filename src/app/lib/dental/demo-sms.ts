@@ -11,55 +11,70 @@ export interface RemoteSmsResponse {
   [key: string]: any;
 }
 
-/**
- * Sends a demo SMS via the main ReplyQuick backend.
- * For demo flows, we NEVER throw on logical errors like
- * "No user found associated with this contact" – we just log them.
- */
 export async function sendDemoSms(
   phoneNumber: string,
   message: string
 ): Promise<RemoteSmsResponse> {
   let res: Response;
+
   try {
     res = await fetch(REMOTE_SMS_URL, {
       method: "POST",
+      redirect: "manual", // ✅ prevents silent /login redirect
       headers: {
         "Content-Type": "application/json",
-        // "x-api-key": process.env.RQ_SMS_TOKEN ?? "",
+        "x-api-key": process.env.RQ_SMS_TOKEN ?? "", // ✅ REQUIRED
       },
       body: JSON.stringify({
         message,
         phoneNumber,
-        // we don’t have contactId in this demo → leave undefined
+        demo: true, // ✅ tells dashboard: don't require user/thread
       }),
     });
   } catch (err) {
     console.warn("[sendDemoSms] Network or fetch error", err);
-    // Treat as soft failure, but don't throw
     return { success: false, error: "Network error sending SMS" };
   }
 
+  // ✅ Detect redirect (login protection) clearly
+  if (res.status >= 300 && res.status < 400) {
+    const location = res.headers.get("location");
+    console.warn("[sendDemoSms] Redirect detected", {
+      status: res.status,
+      location,
+      url: REMOTE_SMS_URL,
+    });
+    return {
+      success: false,
+      error: `Redirected (${res.status}) to ${location ?? "unknown"}`,
+    };
+  }
+
   let data: RemoteSmsResponse = {};
+  const text = await res.text();
+
   try {
-    data = (await res.json()) as RemoteSmsResponse;
+    data = text ? (JSON.parse(text) as RemoteSmsResponse) : {};
   } catch {
-    // if JSON parse fails but HTTP is ok, just ignore
+    // if response isn't json, keep raw
+    data = { raw: text } as any;
   }
 
   if (!res.ok) {
-    const msg =
-      data?.error || `Remote SMS failed with status ${res.status}`;
-    console.warn("[sendDemoSms] Remote backend returned error:", msg);
-    // Still DO NOT throw — demo should continue
-    return { success: false, error: msg };
+    const msg = (data as any)?.error || `Remote SMS failed with status ${res.status}`;
+    console.warn("[sendDemoSms] Remote backend returned error:", {
+      status: res.status,
+      msg,
+      body: data,
+    });
+    return { success: false, error: msg, status: res.status, body: data } as any;
   }
 
-  if (data?.error) {
-    console.warn(
-      "[sendDemoSms] Remote backend reported soft error with 2xx:",
-      data.error
-    );
+  // If backend doesn't return success=true, treat it as soft failure
+  if ((data as any)?.success !== true) {
+    const msg = (data as any)?.error || "Remote SMS did not confirm success";
+    console.warn("[sendDemoSms] Soft failure:", msg, data);
+    return { success: false, error: msg, body: data } as any;
   }
 
   return data;
