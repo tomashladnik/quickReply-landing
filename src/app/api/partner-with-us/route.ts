@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const ALLOWED_PROGRAMS = ["charity", "gym", "employer"] as const;
+const ALLOWED_PROGRAMS = ["charity", "gym", "employer", "school"] as const;
 type Program = (typeof ALLOWED_PROGRAMS)[number];
 
 function isProgram(v: unknown): v is Program {
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const record = await prisma.partner_application.create({
+    const record = await prisma.partnerApplication.create({
       data: {
         program,
         status: "new",
