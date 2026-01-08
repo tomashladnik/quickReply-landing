@@ -1,196 +1,327 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/dentalscan/PartnerWithUsModal.tsx
+"use client";
 
-import { useState } from "react";
-import { X, CheckCircle2 } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { X, CheckCircle2, Loader2 } from "lucide-react";
+
+import GymPartnerForm, { type GymForm } from "./_components/GymPartnerForm";
+import CharityPartnerForm, {
+  type CharityForm,
+} from "./_components/CharityPartnerForm";
+import EmployerPartnerForm, {
+  type EmployerForm,
+} from "./_components/EmployerPartnerForm";
+
+type Program = "gym" | "charity" | "employer";
 
 interface PartnerWithUsModalProps {
   open: boolean;
   onClose: () => void;
+  program: Program;
 }
 
-const types = [
-  "Gym/Wellness Center",
-  "School/Education Program",
-  "Charity/Nonprofit",
-  "Other"
-];
+type AnyForm = GymForm | CharityForm | EmployerForm;
 
-export default function PartnerWithUsModal({ open, onClose }: PartnerWithUsModalProps) {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    organization: "",
-    type: types[0],
-    message: ""
-  });
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+export default function PartnerWithUsModal({
+  open,
+  onClose,
+  program,
+}: PartnerWithUsModalProps) {
+  const titleId = "partner-with-us-title";
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const initialForm: AnyForm = useMemo(() => {
+    if (program === "gym") {
+      return {
+        program: "gym",
+        gymName: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        zip: "",
+        password: "",
+        agreeNonMedical: false,
+        agreeAuthority: false,
+      };
+    }
+
+    if (program === "charity") {
+      return {
+        program: "charity",
+        organizationName: "",
+        einOrRegistration: "",
+        contactPersonName: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        zip: "",
+        populationServed: "",
+        expectedMonthlyScans: "",
+        programType: "",
+        targetLaunchDate: "",
+        operationType: "",
+        additionalNotes: "",
+        agreeAuthority: false,
+        c1AuthorizedToOperate: false,
+        c2HasMinorConsents: false,
+        c3NonDiagnosticOnly: false,
+        c4AcceptComplianceResponsibility: false,
+        c5RQNotResponsibleForConsent: false,
+      };
+    }
+
+    return {
+      program: "employer",
+      companyName: "",
+      contactName: "",
+      workEmail: "",
+      phone: "",
+      website: "",
+      employeeCount: "",
+      industry: "",
+      message: "",
+      agreeContact: false,
+    };
+  }, [program]);
+
+  const [form, setForm] = useState<AnyForm>(() => initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
 
-  if (!open) return null;
+  // Reset state when opened / program changes
+  useEffect(() => {
+    if (!open) return;
+    setForm(initialForm);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    setIsSubmitting(false);
+  }, [open, initialForm]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // Prevent background scroll
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // Close on ESC + focus panel
+  useEffect(() => {
+    if (!open) return;
+
+    panelRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  const canSubmit = useMemo(() => {
+    if (form.program === "gym")
+      return form.agreeNonMedical && form.agreeAuthority;
+
+    if (form.program === "charity") {
+      return (
+        form.agreeAuthority &&
+        form.c1AuthorizedToOperate &&
+        form.c2HasMinorConsents &&
+        form.c3NonDiagnosticOnly &&
+        form.c4AcceptComplianceResponsibility &&
+        form.c5RQNotResponsibleForConsent
+      );
+    }
+
+    return form.agreeContact;
+  }, [form]);
+
+  const header = useMemo(() => {
+    if (program === "gym") {
+      return {
+        title: "Partner With Us — Gym Program",
+        subtitle:
+          "Register your gym to offer preventive, AI-powered dental screenings to members.",
+      };
+    }
+    if (program === "charity") {
+      return {
+        title: "Partner With Us — Charity Program",
+        subtitle:
+          "Apply to run community dental screening programs for underserved populations.",
+      };
+    }
+    return {
+      title: "Partner With Us — Employer Program",
+      subtitle:
+        "Let’s explore a workplace rollout for preventive screenings and engagement.",
+    };
+  }, [program]);
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value, type } = target;
+    const checked = target.checked;
+
+    setForm((prev) => {
+      const next: any = { ...prev };
+      next[name] = type === "checkbox" ? checked : value;
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit || isSubmitting) return;
+
     setSubmitError(null);
     setIsSubmitting(true);
+
     try {
       const res = await fetch("/api/partner-with-us", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
+
       if (!res.ok) throw new Error("Failed to send. Please try again.");
+
       setSubmitSuccess(true);
-      setForm({ name: "", email: "", organization: "", type: types[0], message: "" });
       setTimeout(() => {
         setSubmitSuccess(false);
         onClose();
-      }, 3000);
+      }, 1800);
     } catch (err: any) {
-      setSubmitError(err.message || "Something went wrong.");
+      setSubmitError(err?.message || "Something went wrong.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!open) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl relative animate-slideIn">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <div className="p-8">
-          <h3 className="text-3xl font-bold text-gray-900 mb-2 text-center">
-            Partner With Us
-          </h3>
-          <p className="text-gray-600 mb-6 text-center">
-            Fill out the form and our team will reach out to you soon.
-          </p>
-          {!submitSuccess ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Your full name"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ebff7] focus:border-transparent outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="you@example.com"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ebff7] focus:border-transparent outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Organization
-                </label>
-                <input
-                  type="text"
-                  name="organization"
-                  value={form.organization}
-                  onChange={handleChange}
-                  placeholder="Organization name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ebff7] focus:border-transparent outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Type *
-                </label>
-                <select
-                  name="type"
-                  value={form.type}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ebff7] focus:border-transparent outline-none transition-all"
-                  required
-                >
-                  {types.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  name="message"
-                  value={form.message}
-                  onChange={handleChange}
-                  placeholder="How would you like to partner with us?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ebff7] focus:border-transparent outline-none transition-all min-h-[80px]"
-                />
-              </div>
-              {/* Checkbox at the bottom */}
-              <div className="flex items-start gap-2">
-                <input
-                  id="partner-checkbox"
-                  type="checkbox"
-                  checked={checked}
-                  onChange={e => setChecked(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-[#4ebff7] focus:ring-[#4ebff7]"
-                />
-                <label htmlFor="partner-checkbox" className="text-xs text-gray-600 leading-relaxed">
-                  I agree to be contacted regarding partnership opportunities.
-                </label>
-              </div>
-              {submitError && (
-                <p className="text-sm text-red-600 text-center">
-                  {submitError}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={isSubmitting || !checked}
-                className="w-full px-6 py-4 bg-[#4ebff7] text-white rounded-lg font-bold text-lg hover:bg-[#3da5d9] transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Sending request...
-                  </span>
-                ) : (
-                  "Submit"
-                )}
-              </button>
-            </form>
-          ) : (
-            <div className="text-center py-8">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-12 h-12 text-green-600" />
-              </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-2">
-                Thank you!
-              </h4>
-              <p className="text-gray-600">
-                Your request has been received. Our team will contact you soon.
-              </p>
-            </div>
+    <div className="fixed inset-0 z-50" aria-hidden={!open}>
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Close dialog"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      />
+
+      {/* Dialog */}
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div
+          ref={panelRef}
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className={cn(
+            "relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl outline-none",
+            "max-h-[90vh] overflow-hidden"
           )}
+        >
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-white border-b">
+            <div className="flex items-start justify-between gap-4 p-6">
+              <div>
+                <h2
+                  id={titleId}
+                  className="text-xl sm:text-2xl font-bold text-gray-900"
+                >
+                  {header.title}
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">{header.subtitle}</p>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#4ebff7]"
+              >
+                <X className="h-4 w-4" />
+                Close
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-88px)]">
+            {submitSuccess ? (
+              <div className="text-center py-10">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <CheckCircle2 className="w-9 h-9 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Submitted</h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  We received your application. Our team will reach out shortly.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {form.program === "gym" && (
+                  <GymPartnerForm form={form} onChange={handleChange} />
+                )}
+
+                {form.program === "charity" && (
+                  <CharityPartnerForm form={form} onChange={handleChange} />
+                )}
+
+                {form.program === "employer" && (
+                  <EmployerPartnerForm form={form} onChange={handleChange} />
+                )}
+
+                {submitError && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  >
+                    {submitError}
+                  </div>
+                )}
+
+                {/* Footer actions */}
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                  <p className="text-xs text-gray-500">
+                    By submitting, you agree that we may contact you about this
+                    program.
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !canSubmit}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#4ebff7] px-6 py-3 text-white font-bold hover:bg-[#3da5d9] transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#4ebff7]"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Application"
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>

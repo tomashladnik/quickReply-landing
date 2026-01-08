@@ -1,3 +1,4 @@
+// src/app/dentalscan/employers/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -26,21 +27,26 @@ export default function EmployersPage() {
 
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                 <span className="block">Employer Program</span>
-                <span className="block text-[#4EBFF7]">DentalScan for Employee Populations</span>
+                <span className="block text-[#4EBFF7]">
+                  DentalScan for Employee Populations
+                </span>
               </h1>
 
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Preventive Oral Health Screening—simple, scalable, and privacy-respectful
+                Preventive Oral Health Screening—simple, scalable, and
+                privacy-respectful
               </p>
 
               <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-                DentalScan offers employers a preventive oral health screening program that employees can
-                complete on their phone—without appointments, clinics, or administrative complexity.
+                DentalScan offers employers a preventive oral health screening
+                program that employees can complete on their phone—without
+                appointments, clinics, or administrative complexity.
               </p>
 
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Designed for organizations that want to support employee health, reduce unplanned absences,
-                and offer a meaningful wellness benefit.
+                Designed for organizations that want to support employee health,
+                reduce unplanned absences, and offer a meaningful wellness
+                benefit.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -62,12 +68,16 @@ export default function EmployersPage() {
               <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-white">
                 <div className="absolute top-4 right-4 z-10 bg-white rounded-lg shadow-lg px-3 py-2 flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-sm font-semibold text-gray-700">Employer Wellness</span>
+                  <span className="text-sm font-semibold text-gray-700">
+                    Employer Wellness
+                  </span>
                 </div>
 
                 <div className="p-6">
                   <div className="flex items-center justify-between pb-4 border-b mb-6">
-                    <h3 className="text-xl font-bold text-gray-900">How It Works</h3>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      How It Works
+                    </h3>
                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
                       Simple Setup
                     </span>
@@ -94,10 +104,14 @@ export default function EmployersPage() {
                     ].map((item, idx) => (
                       <div key={idx} className="flex items-start gap-3">
                         <div className="w-9 h-9 bg-linear-to-r from-[#4EBFF7] to-[#35A3E8] rounded-lg flex items-center justify-center shrink-0">
-                          <span className="text-white font-bold">{idx + 1}</span>
+                          <span className="text-white font-bold">
+                            {idx + 1}
+                          </span>
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{item.title}</p>
+                          <p className="font-semibold text-gray-900">
+                            {item.title}
+                          </p>
                           <p className="text-sm text-gray-600">{item.desc}</p>
                         </div>
                       </div>
@@ -106,7 +120,8 @@ export default function EmployersPage() {
 
                   <div className="mt-6 text-center">
                     <p className="text-sm text-gray-600">
-                      DentalScan does not diagnose, treat, or replace dental professionals.
+                      DentalScan does not diagnose, treat, or replace dental
+                      professionals.
                     </p>
                   </div>
                 </div>
@@ -116,15 +131,22 @@ export default function EmployersPage() {
         </div>
       </section>
 
-      <PartnerWithUsModal open={showPartnerModal} onClose={() => setShowPartnerModal(false)} />
+      <PartnerWithUsModal
+        open={showPartnerModal}
+        onClose={() => setShowPartnerModal(false)}
+        program="employer"
+      />
 
       {/* Who This Program Is For */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Who This Program Is For</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Who This Program Is For
+            </h2>
             <p className="text-xl text-gray-600">
-              Built for organizations with distributed, on-site, or physically active workforces
+              Built for organizations with distributed, on-site, or physically
+              active workforces
             </p>
           </div>
 
@@ -142,7 +164,12 @@ export default function EmployersPage() {
                 className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
               >
                 <div className="w-10 h-10 bg-linear-to-r from-[#4EBFF7] to-[#35A3E8] rounded-lg flex items-center justify-center mb-4">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -166,7 +193,8 @@ export default function EmployersPage() {
               Why Preventive Oral Health Matters for Employers
             </h2>
             <p className="text-xl text-gray-600">
-              Oral health issues can impact attendance, safety, and performance—often before they become emergencies
+              Oral health issues can impact attendance, safety, and
+              performance—often before they become emergencies
             </p>
           </div>
 
@@ -189,7 +217,9 @@ export default function EmployersPage() {
                 key={item.title}
                 className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{item.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  {item.title}
+                </h3>
                 <p className="text-gray-600">{item.desc}</p>
               </div>
             ))}
@@ -201,20 +231,25 @@ export default function EmployersPage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Approach</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Our Approach
+            </h2>
             <p className="text-xl text-gray-600">
-              Identify potential concerns early—before they become disruptive or costly
+              Identify potential concerns early—before they become disruptive or
+              costly
             </p>
           </div>
 
           <div className="bg-linear-to-r from-[#4EBFF7] to-[#35A3E8] rounded-2xl p-10 text-white">
             <div className="max-w-4xl mx-auto space-y-4 text-center">
               <p className="text-xl leading-relaxed">
-                Employees complete a guided oral photo capture on their phone. DentalScan generates structured
-                screening outputs and clear next-step guidance—without diagnoses or treatment.
+                Employees complete a guided oral photo capture on their phone.
+                DentalScan generates structured screening outputs and clear
+                next-step guidance—without diagnoses or treatment.
               </p>
               <p className="text-lg opacity-95">
-                When appropriate, a professional screening report is produced for follow-up by a licensed dental professional.
+                When appropriate, a professional screening report is produced
+                for follow-up by a licensed dental professional.
               </p>
             </div>
           </div>
@@ -225,32 +260,42 @@ export default function EmployersPage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Program Structure</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Program Structure
+            </h2>
             <p className="text-xl text-gray-600">
-              Preventive screening intervals aligned with standard dental care—flexible based on workforce needs
+              Preventive screening intervals aligned with standard dental
+              care—flexible based on workforce needs
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Two screenings per year</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Two screenings per year
+              </h3>
               <p className="text-gray-600">
-                Aligned with traditional preventive dental checkup intervals and widely adopted across employee wellness programs.
+                Aligned with traditional preventive dental checkup intervals and
+                widely adopted across employee wellness programs.
               </p>
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Three screenings per year</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Three screenings per year
+              </h3>
               <p className="text-gray-600">
-                Higher-engagement option (about every four months), often selected for distributed or physically demanding workforces.
+                Higher-engagement option (about every four months), often
+                selected for distributed or physically demanding workforces.
               </p>
             </div>
           </div>
 
           <div className="mt-10 text-center">
             <p className="text-gray-600">
-              Program frequency is selected based on workforce size, job type, and organizational goals. DentalScan supports employers
-              in selecting the right cadence during onboarding.
+              Program frequency is selected based on workforce size, job type,
+              and organizational goals. DentalScan supports employers in
+              selecting the right cadence during onboarding.
             </p>
           </div>
         </div>
@@ -261,7 +306,9 @@ export default function EmployersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12">
             <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">What Employers Receive</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                What Employers Receive
+              </h2>
               <ul className="space-y-4">
                 {[
                   "A preventive oral health screening program for employees",
@@ -272,7 +319,11 @@ export default function EmployersPage() {
                 ].map((t) => (
                   <li key={t} className="flex items-start">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-4 mt-1 shrink-0">
-                      <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-3 h-3 text-green-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path
                           fillRule="evenodd"
                           d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -287,7 +338,9 @@ export default function EmployersPage() {
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">What Employees Experience</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                What Employees Experience
+              </h2>
               <ul className="space-y-4">
                 {[
                   "Quick, non-invasive screening completed from their phone",
@@ -297,7 +350,11 @@ export default function EmployersPage() {
                 ].map((t) => (
                   <li key={t} className="flex items-start">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-4 mt-1 shrink-0">
-                      <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-3 h-3 text-green-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path
                           fillRule="evenodd"
                           d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -318,28 +375,43 @@ export default function EmployersPage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">What DentalScan Is and Is Not</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              What DentalScan Is and Is Not
+            </h2>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
             <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <h3 className="text-2xl font-bold text-green-600 mb-6">DentalScan IS</h3>
+              <h3 className="text-2xl font-bold text-green-600 mb-6">
+                DentalScan IS
+              </h3>
               <ul className="space-y-4">
                 {[
                   "A preventive screening and early awareness tool",
                   "A scalable wellness benefit for employee populations",
                   "A support layer for licensed dental professionals",
                 ].map((t) => (
-                  <li key={t} className="text-gray-700">• {t}</li>
+                  <li key={t} className="text-gray-700">
+                    • {t}
+                  </li>
                 ))}
               </ul>
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <h3 className="text-2xl font-bold text-red-600 mb-6">DentalScan IS NOT</h3>
+              <h3 className="text-2xl font-bold text-red-600 mb-6">
+                DentalScan IS NOT
+              </h3>
               <ul className="space-y-4">
-                {["A diagnosis", "A treatment plan", "Medical or dental advice", "A replacement for dental care"].map((t) => (
-                  <li key={t} className="text-gray-700">• {t}</li>
+                {[
+                  "A diagnosis",
+                  "A treatment plan",
+                  "Medical or dental advice",
+                  "A replacement for dental care",
+                ].map((t) => (
+                  <li key={t} className="text-gray-700">
+                    • {t}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -348,7 +420,8 @@ export default function EmployersPage() {
           <div className="mt-12 text-center">
             <div className="bg-linear-to-r from-[#4EBFF7] to-[#35A3E8] rounded-2xl p-8 text-white">
               <p className="text-xl font-medium">
-                All clinical decisions remain the responsibility of licensed dental professionals.
+                All clinical decisions remain the responsibility of licensed
+                dental professionals.
               </p>
             </div>
           </div>
@@ -359,8 +432,13 @@ export default function EmployersPage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Privacy, Security, and Responsible Use</h2>
-            <p className="text-xl text-gray-600">Built with privacy, security, and responsible technology at its core</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Privacy, Security, and Responsible Use
+            </h2>
+            <p className="text-xl text-gray-600">
+              Built with privacy, security, and responsible technology at its
+              core
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
@@ -383,7 +461,8 @@ export default function EmployersPage() {
           <div className="bg-linear-to-r from-[#4EBFF7] to-[#35A3E8] rounded-2xl p-8 text-center text-white">
             <h3 className="text-2xl font-bold mb-4">Partner With DentalScan</h3>
             <p className="text-xl mb-8 opacity-95">
-              Offer your workforce a preventive oral health benefit that is simple, modern, and impactful.
+              Offer your workforce a preventive oral health benefit that is
+              simple, modern, and impactful.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -406,19 +485,31 @@ export default function EmployersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="mb-6">
-              <h3 className="text-2xl font-bold mb-2 text-white">DentalScan Employer Program</h3>
-              <p className="text-blue-100">is part of the DentalScan platform by ReplyQuick LLC</p>
+              <h3 className="text-2xl font-bold mb-2 text-white">
+                DentalScan Employer Program
+              </h3>
+              <p className="text-blue-100">
+                is part of the DentalScan platform by ReplyQuick LLC
+              </p>
             </div>
             <div className="border-t border-white/20 pt-6">
               <div className="flex justify-center space-x-6 mb-4">
-                <Link href="/dentalscan/privacy" className="text-blue-100 hover:text-white transition-colors">
+                <Link
+                  href="/dentalscan/privacy"
+                  className="text-blue-100 hover:text-white transition-colors"
+                >
                   Privacy Policy
                 </Link>
-                <Link href="/dentalscan" className="text-blue-100 hover:text-white transition-colors">
+                <Link
+                  href="/dentalscan"
+                  className="text-blue-100 hover:text-white transition-colors"
+                >
                   DentalScan Platform
                 </Link>
               </div>
-              <p className="text-sm text-blue-100">© 2025 ReplyQuick LLC. All rights reserved.</p>
+              <p className="text-sm text-blue-100">
+                © 2025 ReplyQuick LLC. All rights reserved.
+              </p>
             </div>
           </div>
         </div>

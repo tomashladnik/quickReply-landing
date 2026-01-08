@@ -100,3 +100,200 @@ model PartnerWithUs {
 
   @@map("PartnerWithUs")
 }
+
+// New multiuse tables
+model multiuse_business {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  public_code       String   @unique @db.VarChar(32)
+
+  name              String
+  organization_type String
+  phone             String?
+  email             String?
+  street_address    String?
+  city              String?
+  state             String?
+  zip_code          String?
+  country           String   @default("US")
+  status            String   @default("ACTIVE")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  metadata          Json?
+  password          String?
+
+  // ✅ back relation required by charity_program.business
+  charity_program   charity_program?
+
+  @@index([organization_type], map: "multiuse_business_type_idx")
+}
+
+model charity_scans {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  short_code                  String    @unique @db.VarChar(32)
+
+  business_id                 String?   @db.Uuid
+  patient_name                String
+  patient_email               String?
+  patient_phone               String
+  date_of_birth               DateTime
+  is_minor                    Boolean   @default(false)
+  guardian_name               String?
+  guardian_relationship       String?
+  guardian_consent_given      Boolean   @default(false)
+  guardian_consent_timestamp  DateTime?
+  guardian_ip_address         String?
+  guardian_user_agent         String?
+  consent_method              String?
+  non_diagnostic_acknowledged Boolean   @default(false)
+  screening_consent_given     Boolean   @default(false)
+  created_at                  DateTime  @default(now())
+  updated_at                  DateTime  @updatedAt
+  completed_at                DateTime?
+  brightness_score            Decimal?  @db.Decimal(10, 2)
+  shade_value                 String?
+  ideal_shade                 String?
+  status                      String?   @default("pending")
+  simplified_status           String?
+  clinic_recommended          Boolean   @default(false)
+  care_priority_score         String?
+  original_json               Json?
+  result_json                 Json?
+
+  @@index([business_id])
+  @@index([created_at])
+  @@index([guardian_consent_given], map: "charity_scans_guardian_consent_idx")
+  @@index([is_minor])
+  @@index([patient_phone], map: "charity_scans_phone_idx")
+  @@index([status])
+}
+
+model gym_scans {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  short_code         String    @unique @db.VarChar(32)
+
+  business_id        String?   @db.Uuid
+  patient_name       String
+  patient_email      String?
+  patient_phone      String
+  date_of_birth      DateTime
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  completed_at       DateTime?
+  brightness_score   Decimal?  @db.Decimal(10, 2)
+  shade_value        String?
+  ideal_shade        String?
+  status             String?   @default("pending")
+  simplified_status  String?
+  clinic_recommended Boolean   @default(false)
+  original_json      Json?
+  result_json        Json?
+
+  @@index([business_id])
+  @@index([created_at])
+  @@index([patient_phone], map: "gym_scans_phone_idx")
+  @@index([status])
+}
+
+model partner_application {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  program       String   @db.VarChar(50) // charity | gym | employer | school ...
+  status        String?  @default("new") @db.VarChar(50)
+
+  name          String?  @db.VarChar(255) // primary contact name
+  email         String?  @db.VarChar(255)
+  phone         String?  @db.VarChar(50)
+
+  organization  String?  @db.VarChar(255)
+  street_address String? @db.VarChar(255)
+  city          String?  @db.VarChar(100)
+  state         String?  @db.VarChar(50)
+  zip_code      String?  @db.VarChar(20)
+  country       String?  @default("USA") @db.VarChar(100)
+
+  notes         String?  @default("")
+  decision_path String?  @default("") @db.VarChar(50)
+
+  payload       Json?    // ✅ store full original form safely (program-specific fields)
+
+  submitted_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @updatedAt
+
+  @@index([program], map: "idx_partner_application_program")
+  @@index([status], map: "idx_partner_application_status")
+  @@index([submitted_at(sort: Desc)], map: "idx_partner_application_submitted_at")
+}
+
+model partner_clinic {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinic_name  String
+
+  // ✅ structured address (for routing + clean UI)
+  street_address String
+  city           String
+  state          String
+  zip_code       String
+  country        String   @default("US")
+
+  // ✅ keep a friendly display string (optional but useful)
+  address_line String
+
+  phone_number String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  charity_programs  charity_program[]
+  program_links charity_program_partner[]
+  network_coverages network_clinic_coverage[]
+}
+
+model charity_program {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_id               String   @unique @db.Uuid
+  charity_partner_clinic_id String?  @db.Uuid
+
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  partnerClinic             partner_clinic?   @relation(fields: [charity_partner_clinic_id], references: [id])
+  business                  multiuse_business @relation(fields: [business_id], references: [id])
+  partners charity_program_partner[]
+
+  @@index([business_id])
+  @@index([charity_partner_clinic_id])
+}
+
+model network_clinic_coverage {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinic_id              String   @db.Uuid
+  coverage_zip           String?
+  coverage_county        String?
+  coverage_state         String?
+  accepting_new_patients Boolean  @default(true)
+  priority               Int      @default(100)
+
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  clinic                 partner_clinic @relation(fields: [clinic_id], references: [id])
+
+  @@index([coverage_zip])
+  @@index([coverage_county])
+  @@index([coverage_state])
+  @@index([accepting_new_patients])
+}
+
+model charity_program_partner {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  program_id String   @db.Uuid
+  clinic_id  String   @db.Uuid
+  created_at DateTime @default(now())
+
+  program charity_program @relation(fields: [program_id], references: [id], onDelete: Cascade)
+  clinic  partner_clinic  @relation(fields: [clinic_id], references: [id], onDelete: Cascade)
+
+  @@unique([program_id, clinic_id])
+  @@index([program_id])
+  @@index([clinic_id])
+}
+
