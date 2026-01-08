@@ -4,7 +4,6 @@
 import React, { useState } from "react";
 import { Check, Building2, Phone, MapPin, Shield, Mail } from "lucide-react";
 import Image from "next/image";
-import { any } from "zod";
 
 export default function GymSignupPage() {
   const [isLogin, setIsLogin] = useState(false);
@@ -24,9 +23,7 @@ export default function GymSignupPage() {
   });
 
   const [loginData, setLoginData] = useState({
-    organizationName: "",
     email: "",
-    phone: "",
     password: "",
   });
 
@@ -120,18 +117,8 @@ export default function GymSignupPage() {
     setError("");
 
     try {
-      if (!loginData.organizationName.trim()) {
-        setError("Please enter your gym name");
-        setIsLoading(false);
-        return;
-      }
       if (!loginData.email.trim()) {
         setError("Please enter your email address");
-        setIsLoading(false);
-        return;
-      }
-      if (!loginData.phone.trim()) {
-        setError("Please enter your phone number");
         setIsLoading(false);
         return;
       }
@@ -140,21 +127,17 @@ export default function GymSignupPage() {
         setIsLoading(false);
         return;
       }
-
       const response = await fetch(`/api/multiusecase/register/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizationName: loginData.organizationName,
           email: loginData.email,
-          phone: loginData.phone,
           password: loginData.password,
           organizationType: "gym",
         }),
       });
 
-      const data = await response.json().catch(() => any);
-
+      const data = await response.json().catch(() => null);
       if (response.ok && data?.success && data?.organization) {
         const redirectId =
           data.organization.organizationId || data.organization.id;
@@ -408,29 +391,6 @@ export default function GymSignupPage() {
                 <form onSubmit={handleLoginSubmit} className="space-y-6">
                   <div>
                     <label
-                      htmlFor="loginOrgName"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
-                    >
-                      Gym Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="loginOrgName"
-                      value={loginData.organizationName}
-                      onChange={(e) =>
-                        setLoginData({
-                          ...loginData,
-                          organizationName: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EBFF7] focus:border-transparent transition-colors"
-                      placeholder="Enter your gym name"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label
                       htmlFor="loginEmail"
                       className="block text-sm font-semibold text-gray-700 mb-2"
                     >
@@ -448,27 +408,6 @@ export default function GymSignupPage() {
                       disabled={isLoading}
                     />
                   </div>
-
-                  <div>
-                    <label
-                      htmlFor="loginPhone"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
-                    >
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      id="loginPhone"
-                      value={loginData.phone}
-                      onChange={(e) =>
-                        setLoginData({ ...loginData, phone: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EBFF7] focus:border-transparent transition-colors"
-                      placeholder="(555) 123-4567"
-                      disabled={isLoading}
-                    />
-                  </div>
-
                   <div>
                     <label
                       htmlFor="loginPassword"
@@ -488,7 +427,6 @@ export default function GymSignupPage() {
                       disabled={isLoading}
                     />
                   </div>
-
                   <button
                     type="submit"
                     disabled={isLoading}
