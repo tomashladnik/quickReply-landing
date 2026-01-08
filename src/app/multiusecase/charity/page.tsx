@@ -5,8 +5,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Building2, Phone, MapPin, Heart, Shield } from "lucide-react";
 import Image from "next/image";
-import { any } from "zod";
-
 type NoticeType = "success" | "error" | "info";
 
 type Notification = {
@@ -69,9 +67,7 @@ export default function CharitySignupPage() {
   });
 
   const [loginData, setLoginData] = useState({
-    organizationName: "",
     email: "",
-    phone: "",
     password: "",
   });
 
@@ -174,7 +170,7 @@ export default function CharitySignupPage() {
           return;
         }
 
-        const session = await res.json().catch(() => any);
+        const session = await res.json().catch(() => null);
 
         const sessionOrgType =
           session?.user?.orgType ||
@@ -241,26 +237,11 @@ export default function CharitySignupPage() {
     setError("");
 
     try {
-      if (!isNonEmptyString(loginData.organizationName)) {
-        setError("Please enter your organization name");
-        return;
-      }
       if (!isNonEmptyString(loginData.email)) {
         setError("Please enter your email address");
         return;
       }
-      if (!isValidEmail(loginData.email)) {
-        setError("Please enter a valid email address");
-        return;
-      }
-      if (!isNonEmptyString(loginData.phone)) {
-        setError("Please enter your phone number");
-        return;
-      }
-      if (digitsOnly(loginData.phone).length < 10) {
-        setError("Please enter a valid phone number with at least 10 digits");
-        return;
-      }
+      
       if (!isNonEmptyString(loginData.password)) {
         setError("Please enter your password");
         return;
@@ -270,9 +251,7 @@ export default function CharitySignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizationName: loginData.organizationName,
           email: loginData.email,
-          phone: loginData.phone,
           password: loginData.password,
           organizationType: "charity",
         }),
@@ -674,29 +653,6 @@ export default function CharitySignupPage() {
                 <form onSubmit={handleLoginSubmit} className="space-y-6">
                   <div>
                     <label
-                      htmlFor="loginOrgName"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
-                    >
-                      Organization Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="loginOrgName"
-                      value={loginData.organizationName}
-                      onChange={(e) =>
-                        setLoginData({
-                          ...loginData,
-                          organizationName: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-colors"
-                      placeholder="Enter your organization name"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label
                       htmlFor="loginEmail"
                       className="block text-sm font-semibold text-gray-700 mb-2"
                     >
@@ -714,27 +670,6 @@ export default function CharitySignupPage() {
                       disabled={isLoading}
                     />
                   </div>
-
-                  <div>
-                    <label
-                      htmlFor="loginPhone"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
-                    >
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      id="loginPhone"
-                      value={loginData.phone}
-                      onChange={(e) =>
-                        setLoginData({ ...loginData, phone: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-colors"
-                      placeholder="(555) 123-4567"
-                      disabled={isLoading}
-                    />
-                  </div>
-
                   <div>
                     <label
                       htmlFor="loginPassword"
@@ -754,7 +689,6 @@ export default function CharitySignupPage() {
                       disabled={isLoading}
                     />
                   </div>
-
                   <button
                     type="submit"
                     disabled={isLoading}
