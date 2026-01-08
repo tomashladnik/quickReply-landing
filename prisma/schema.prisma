@@ -101,55 +101,102 @@ model PartnerWithUs {
   @@map("PartnerWithUs")
 }
 
-model partner_application {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
-  program       String   @db.VarChar(50) // charity | gym | employer | school ...
-  status        String?  @default("new") @db.VarChar(50)
-
-  name          String?  @db.VarChar(255) // primary contact name
-  email         String?  @db.VarChar(255)
-  phone         String?  @db.VarChar(50)
-
-  organization  String?  @db.VarChar(255)
-  street_address String? @db.VarChar(255)
-  city          String?  @db.VarChar(100)
-  state         String?  @db.VarChar(50)
-  zip_code      String?  @db.VarChar(20)
-  country       String?  @default("USA") @db.VarChar(100)
-
-  notes         String?  @default("")
-  decision_path String?  @default("") @db.VarChar(50)
-
-  payload       Json?    // ✅ store full original form safely (program-specific fields)
-
-  submitted_at  DateTime @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime @updatedAt
+model PartnerApplication {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  program        String   @db.VarChar(50)
+  status         String?  @default("new") @db.VarChar(50)
+  name           String?  @db.VarChar(255)
+  email          String?  @db.VarChar(255)
+  phone          String?  @db.VarChar(50)
+  organization   String?  @db.VarChar(255)
+  street_address String?  @db.VarChar(255)
+  city           String?  @db.VarChar(100)
+  state          String?  @db.VarChar(50)
+  zip_code       String?  @db.VarChar(20)
+  country        String?  @default("USA") @db.VarChar(100)
+  notes          String?  @default("")
+  decision_path  String?  @default("") @db.VarChar(50)
+  payload        Json?
+  submitted_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @updatedAt
 
   @@index([program], map: "idx_partner_application_program")
   @@index([status], map: "idx_partner_application_status")
   @@index([submitted_at(sort: Desc)], map: "idx_partner_application_submitted_at")
+  @@map("partner_application")
 }
 
-model partner_clinic {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clinic_name  String
+model PartnerClinic {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinic_name    String
 
-  // ✅ structured address (for routing + clean UI)
   street_address String
   city           String
   state          String
   zip_code       String
   country        String   @default("US")
 
-  // ✅ keep a friendly display string (optional but useful)
-  address_line String
+  address_line   String
+  phone_number   String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
-  phone_number String
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  charity_programs   CharityProgram[]
+  program_links      CharityProgramPartner[]
+  network_coverages  NetworkClinicCoverage[]
 
-  charity_programs  charity_program[]
-  program_links charity_program_partner[]
-  network_coverages network_clinic_coverage[]
+  @@map("partner_clinic")
+}
+
+model CharityProgram {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_id               String   @unique @db.Uuid
+  charity_partner_clinic_id String?  @db.Uuid
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  partnerClinic PartnerClinic? @relation(fields: [charity_partner_clinic_id], references: [id])
+  partners      CharityProgramPartner[]
+
+  // IMPORTANT: only keep this if you actually have this model in schema.prisma
+  // business      MultiuseBusiness @relation(fields: [business_id], references: [id])
+
+  @@index([business_id])
+  @@index([charity_partner_clinic_id])
+  @@map("charity_program")
+}
+
+model CharityProgramPartner {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  program_id String   @db.Uuid
+  clinic_id  String   @db.Uuid
+  created_at DateTime @default(now())
+
+  program CharityProgram @relation(fields: [program_id], references: [id], onDelete: Cascade)
+  clinic  PartnerClinic  @relation(fields: [clinic_id], references: [id], onDelete: Cascade)
+
+  @@unique([program_id, clinic_id])
+  @@index([program_id])
+  @@index([clinic_id])
+  @@map("charity_program_partner")
+}
+
+model NetworkClinicCoverage {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinic_id              String   @db.Uuid
+  coverage_zip           String?
+  coverage_county        String?
+  coverage_state         String?
+  accepting_new_patients Boolean  @default(true)
+  priority               Int      @default(100)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  clinic PartnerClinic @relation(fields: [clinic_id], references: [id])
+
+  @@index([coverage_zip])
+  @@index([coverage_county])
+  @@index([coverage_state])
+  @@index([accepting_new_patients])
+  @@map("network_clinic_coverage")
 }
