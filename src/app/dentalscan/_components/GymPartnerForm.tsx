@@ -189,25 +189,6 @@ export default function GymPartnerForm({
         </Field>
       </Section>
 
-      <Section
-        title="Account setup"
-        subtitle="Create a password for your organization account."
-      >
-        <Field label="Password" required help="Minimum 6 characters">
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={onChange}
-            required
-            className={inputCls}
-            placeholder="Create a secure password"
-            autoComplete="new-password"
-            minLength={6}
-          />
-        </Field>
-      </Section>
-
       <Section title="Agreements" subtitle="Required to continue.">
         <CheckLine
           name="agreeNonMedical"

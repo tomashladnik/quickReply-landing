@@ -13,9 +13,69 @@ export type EmployerForm = {
   website: string;
   employeeCount: string;
   industry: string;
+
+  // ✅ Location (same style as charity)
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+
   message: string;
   agreeContact: boolean;
 };
+
+const US_STATES = [
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+];
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -129,7 +189,71 @@ export default function EmployerPartnerForm({
             />
           </Field>
         </div>
+      </Section>
 
+      {/* ✅ NEW: Location section (same as charity) */}
+      <Section title="Location" subtitle="Where is your company based?">
+        <Field label="Address" required>
+          <input
+            name="address"
+            value={form.address}
+            onChange={onChange}
+            required
+            className={inputCls}
+            placeholder="123 Business Ave"
+            autoComplete="street-address"
+          />
+        </Field>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="City" required>
+            <input
+              name="city"
+              value={form.city}
+              onChange={onChange}
+              required
+              className={inputCls}
+              placeholder="Dallas"
+              autoComplete="address-level2"
+            />
+          </Field>
+
+          <Field label="State" required>
+            <select
+              name="state"
+              value={form.state}
+              onChange={onChange}
+              required
+              className={cn(inputCls, "py-3.5")}
+              autoComplete="address-level1"
+            >
+              <option value="">Select state</option>
+              {US_STATES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <Field label="ZIP code" required>
+          <input
+            name="zip"
+            value={form.zip}
+            onChange={onChange}
+            required
+            className={inputCls}
+            placeholder="12345"
+            autoComplete="postal-code"
+          />
+        </Field>
+      </Section>
+
+      <Section
+        title="Notes"
+        subtitle="Optional details to help us route your request."
+      >
         <Field label="What are you looking for?" help="Optional">
           <textarea
             name="message"
