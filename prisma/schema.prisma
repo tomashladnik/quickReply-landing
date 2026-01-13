@@ -23,84 +23,6 @@ model DentalLead {
   @@map("DentalLead")
 }
 
-// Demo-only models (tables used only for the DentalScan demo flow)
-
-model DemoDentist {
-  id        String        @id @default(cuid())
-  name      String
-  email     String?
-  phone     String?
-  createdAt DateTime      @default(now())
-
-  patients  DemoPatient[]
-  scans     DemoScan[]
-
-  @@map("demo_dentist")
-}
-
-model DemoPatient {
-  id        String      @id @default(cuid())
-  name      String
-  phone     String
-  email     String?
-  createdAt DateTime    @default(now())
-
-  dentist   DemoDentist @relation(fields: [dentistId], references: [id])
-  dentistId String
-
-  scans     DemoScan[]
-
-  @@map("demo_patient")
-}
-
-model DemoScan {
-  id          String        @id @default(cuid())
-  status      String        @default("link_sent") // link_sent | submitted | completed
-  imageUrls   Json?
-  result      Json?
-  createdAt   DateTime      @default(now())
-  submittedAt DateTime?
-  completedAt DateTime?
-
-  dentist     DemoDentist?  @relation(fields: [dentistId], references: [id])
-  dentistId   String?
-
-  patient     DemoPatient?  @relation(fields: [patientId], references: [id])
-  patientId   String?
-
-  // NEW: short links associated with this scan
-  links       DemoScanLink[]
-
-  @@map("demo_scan")
-}
-
-model DemoScanLink {
-  id        String      @id @default(cuid())
-  code      String      @unique        // e.g. "AB3F9X2K"
-  scan      DemoScan    @relation(fields: [scanId], references: [id])
-  scanId    String
-
-  dentistId String?
-  patientId String?
-
-  createdAt DateTime    @default(now())
-  expiresAt DateTime?
-
-  @@map("demo_scan_link")
-}
-
-model PartnerWithUs {
-  id           String   @id @default(cuid())
-  name         String
-  email        String
-  organization String?
-  type         String
-  message      String?
-  createdAt    DateTime @default(now())
-
-  @@map("PartnerWithUs")
-}
-
 model PartnerApplication {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   program        String   @db.VarChar(50)
@@ -127,39 +49,33 @@ model PartnerApplication {
 }
 
 model PartnerClinic {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clinic_name    String
-
-  street_address String
-  city           String
-  state          String
-  zip_code       String
-  country        String   @default("US")
-
-  address_line   String
-  phone_number   String
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-
-  charity_programs   CharityProgram[]
-  program_links      CharityProgramPartner[]
-  network_coverages  NetworkClinicCoverage[]
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinic_name       String
+  street_address    String
+  city              String
+  state             String
+  zip_code          String
+  country           String                  @default("US")
+  address_line      String
+  phone_number      String
+  created_at        DateTime                @default(now())
+  updated_at        DateTime                @updatedAt
+  charity_programs  CharityProgram[]
+  program_links     CharityProgramPartner[]
+  network_coverages NetworkClinicCoverage[]
 
   @@map("partner_clinic")
 }
 
 model CharityProgram {
-  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  business_id               String   @unique @db.Uuid
-  charity_partner_clinic_id String?  @db.Uuid
-  created_at                DateTime @default(now())
-  updated_at                DateTime @updatedAt
-
-  partnerClinic PartnerClinic? @relation(fields: [charity_partner_clinic_id], references: [id])
-  partners      CharityProgramPartner[]
-
-  // IMPORTANT: only keep this if you actually have this model in schema.prisma
-  // business      MultiuseBusiness @relation(fields: [business_id], references: [id])
+  id                        String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_id               String                  @unique @db.Uuid
+  charity_partner_clinic_id String?                 @db.Uuid
+  created_at                DateTime                @default(now())
+  updated_at                DateTime                @updatedAt
+  multiuse_business         multiuse_business       @relation(fields: [business_id], references: [id])
+  partnerClinic             PartnerClinic?          @relation(fields: [charity_partner_clinic_id], references: [id])
+  partners                  CharityProgramPartner[]
 
   @@index([business_id])
   @@index([charity_partner_clinic_id])
@@ -167,13 +83,12 @@ model CharityProgram {
 }
 
 model CharityProgramPartner {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  program_id String   @db.Uuid
-  clinic_id  String   @db.Uuid
-  created_at DateTime @default(now())
-
-  program CharityProgram @relation(fields: [program_id], references: [id], onDelete: Cascade)
-  clinic  PartnerClinic  @relation(fields: [clinic_id], references: [id], onDelete: Cascade)
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  program_id String         @db.Uuid
+  clinic_id  String         @db.Uuid
+  created_at DateTime       @default(now())
+  clinic     PartnerClinic  @relation(fields: [clinic_id], references: [id], onDelete: Cascade)
+  program    CharityProgram @relation(fields: [program_id], references: [id], onDelete: Cascade)
 
   @@unique([program_id, clinic_id])
   @@index([program_id])
@@ -182,21 +97,1589 @@ model CharityProgramPartner {
 }
 
 model NetworkClinicCoverage {
-  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clinic_id              String   @db.Uuid
+  id                     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinic_id              String        @db.Uuid
   coverage_zip           String?
   coverage_county        String?
   coverage_state         String?
-  accepting_new_patients Boolean  @default(true)
-  priority               Int      @default(100)
-  created_at             DateTime @default(now())
-  updated_at             DateTime @updatedAt
-
-  clinic PartnerClinic @relation(fields: [clinic_id], references: [id])
+  accepting_new_patients Boolean       @default(true)
+  priority               Int           @default(100)
+  created_at             DateTime      @default(now())
+  updated_at             DateTime      @updatedAt
+  clinic                 PartnerClinic @relation(fields: [clinic_id], references: [id])
 
   @@index([coverage_zip])
   @@index([coverage_county])
   @@index([coverage_state])
   @@index([accepting_new_patients])
   @@map("network_clinic_coverage")
+}
+
+model A2PBrand {
+  id           String        @id
+  brandSid     String        @unique
+  userId       String?
+  companyName  String?
+  status       String?
+  errorCode    String?
+  errorMessage String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  users        users?        @relation(fields: [userId], references: [id])
+  A2PCampaign  A2PCampaign[]
+
+  @@index([userId])
+}
+
+model A2PCampaign {
+  id                    String                  @id
+  campaignSid           String                  @unique
+  brandSid              String?
+  brandRefId            String?
+  userId                String?
+  usecase               String?
+  status                String?
+  errorCode             String?
+  errorMessage          String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  A2PBrand              A2PBrand?               @relation(fields: [brandRefId], references: [id])
+  users                 users?                  @relation(fields: [userId], references: [id])
+  A2PNumberRegistration A2PNumberRegistration[]
+
+  @@index([brandSid])
+  @@index([userId])
+}
+
+model A2PNumberRegistration {
+  id            String         @id
+  numberSid     String         @unique
+  e164          String?
+  phoneNumberId String?        @db.Uuid
+  campaignSid   String?
+  campaignRefId String?
+  userId        String?
+  status        String?
+  errorCode     String?
+  errorMessage  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime
+  A2PCampaign   A2PCampaign?   @relation(fields: [campaignRefId], references: [id])
+  phone_numbers phone_numbers? @relation(fields: [phoneNumberId], references: [id])
+  users         users?         @relation(fields: [userId], references: [id])
+
+  @@index([campaignSid])
+  @@index([phoneNumberId])
+  @@index([userId])
+}
+
+model API_KEY {
+  id  String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key String @db.VarChar(32)
+}
+
+model AgentDraft {
+  id                  String   @id
+  userId              String
+  name                String
+  script              String
+  voice_id            String?
+  timezone            String?
+  startTime           String?
+  endTime             String?
+  SMSBackup           Boolean?
+  fallbackTemplate    String?
+  followupDelay       Int?
+  transferToHuman     Boolean?
+  fallbackToVoicemail Boolean?
+  optOutLogic         Boolean?
+  personality         String
+  responseSpeed       Int
+  smsScript           String?
+  users               users    @relation(fields: [userId], references: [id])
+}
+
+model Attachment {
+  id             String       @id
+  textCampaignId String
+  fileUrl        String
+  fileName       String
+  createdAt      DateTime     @default(now())
+  TextCampaign   TextCampaign @relation(fields: [textCampaignId], references: [id])
+}
+
+model AuditLog {
+  id              String   @id
+  timestamp       DateTime @default(now())
+  businessId      String
+  userId          String?
+  actorType       String
+  userDisplayName String?
+  ipAddress       String?
+  userAgent       String?
+  eventType       String
+  entityType      String?
+  entityId        String?
+  entityLabel     String?
+  riskLevel       String   @default("low")
+  summary         String
+  action          String
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  Business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  users           users?   @relation(fields: [userId], references: [id])
+
+  @@index([businessId, entityType])
+  @@index([businessId, eventType])
+  @@index([businessId, timestamp])
+  @@index([businessId, userId])
+}
+
+model Business {
+  id                              String                            @id
+  userId                          String                            @unique
+  name                            String
+  size                            String?
+  industry                        String?
+  address                         String?
+  zipCode                         String?
+  source                          String?
+  description                     String?
+  country                         String                            @default("US")
+  state                           String?
+  AuditLog                        AuditLog[]
+  users                           users                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ConsentTemplate                 ConsentTemplate[]
+  DataExportRequest               DataExportRequest[]
+  ImportJob                       ImportJob[]
+  Insurance                       Insurance[]
+  Invoice                         Invoice[]
+  InvoiceTemplateSetting          InvoiceTemplateSetting?
+  JurisdictionAgreement           JurisdictionAgreement[]
+  Patient                         Patient[]
+  PatientConsent                  PatientConsent[]
+  ProviderConfig                  ProviderConfig?
+  Scan                            Scan[]
+  ScanJob                         ScanJob[]
+  ScanLink                        ScanLink[]
+  ScanRequest                     ScanRequest[]
+  ScanSubscription                ScanSubscription[]
+  business_messaging_services     business_messaging_services?
+  business_phone_numbers          business_phone_numbers[]
+  practice_external_payment_links practice_external_payment_links[]
+  practice_payment_settings       practice_payment_settings?
+}
+
+model Call {
+  id                  String    @id
+  agentId             String?
+  contactId           String?
+  callSid             String    @unique
+  startTime           DateTime  @default(now())
+  endTime             DateTime?
+  updateTime          DateTime
+  duration            Int?
+  status              String    @default("pending")
+  direction           String    @default("outbound")
+  cost                Float?
+  transcriptText      String?
+  summary             String?
+  userSentiment       String?
+  qualification       String?
+  recordingUrl        String?
+  publicLogUrl        String?
+  disconnectionReason String?
+  outcome             String?
+  fromNumber          String
+  toNumber            String
+  agentName           String?
+  contactName         String?
+  userId              String?
+  agents              agents?   @relation(fields: [agentId], references: [id])
+  contacts            contacts? @relation(fields: [contactId], references: [id])
+  users               users?    @relation(fields: [userId], references: [id])
+}
+
+model ConsentTemplate {
+  id                     String                   @id
+  key                    String
+  title                  String
+  description            String?
+  scope                  ConsentTemplateScope     @default(GLOBAL)
+  businessId             String?
+  isActive               Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  Business               Business?                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  ConsentTemplateVersion ConsentTemplateVersion[]
+  PatientConsent         PatientConsent[]
+
+  @@unique([businessId, key])
+}
+
+model ConsentTemplateVersion {
+  id              String           @id
+  templateId      String
+  version         Int
+  content         String
+  language        String?
+  effectiveFrom   DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  createdByUserId String?
+  users           users?           @relation(fields: [createdByUserId], references: [id])
+  ConsentTemplate ConsentTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  PatientConsent  PatientConsent[]
+
+  @@unique([templateId, version])
+  @@index([templateId])
+}
+
+model DataExportRequest {
+  id                String           @id
+  businessId        String
+  requestedByUserId String
+  status            DataExportStatus @default(PENDING)
+  exportPath        String?
+  fileHash          String?
+  region            String?
+  legalBasis        String?
+  exportType        String?
+  originIp          String?
+  userAgent         String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime
+  completedAt       DateTime?
+  expiresAt         DateTime?
+  error             String?
+  Business          Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  users             users            @relation(fields: [requestedByUserId], references: [id], onDelete: Cascade)
+}
+
+model FollowUpTemplate {
+  id        String   @id
+  name      String   @unique
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model FrequentlySentContact {
+  id                  String              @id
+  groupId             String
+  name                String?
+  phone               String
+  email               String?
+  FrequentlySentGroup FrequentlySentGroup @relation(fields: [groupId], references: [id])
+}
+
+model FrequentlySentGroup {
+  id                    String                  @id
+  name                  String
+  userId                String
+  FrequentlySentContact FrequentlySentContact[]
+  users                 users                   @relation(fields: [userId], references: [id])
+}
+
+model GoogleToken {
+  id           String   @id
+  userId       String   @unique
+  accessToken  String
+  refreshToken String?
+  scope        String?
+  tokenType    String?
+  expiryDate   BigInt?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  users        users    @relation(fields: [userId], references: [id])
+}
+
+model ImportJob {
+  id            String          @id
+  businessId    String
+  userId        String
+  type          ImportJobType   @default(PATIENT_PMS_IMPORT)
+  status        ImportJobStatus @default(PENDING)
+  totalRows     Int             @default(0)
+  processedRows Int             @default(0)
+  failedRows    Int             @default(0)
+  parseErrors   Json?
+  error         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  Business      Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  users         users           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ImportJobRow  ImportJobRow[]
+}
+
+model ImportJobRow {
+  id        String             @id
+  jobId     String
+  rowNumber Int
+  data      Json
+  status    ImportJobRowStatus @default(PENDING)
+  error     String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime
+  ImportJob ImportJob          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, status, rowNumber])
+}
+
+model Insurance {
+  id                                      String              @id
+  businessId                              String
+  patientId                               String
+  payerName                               String
+  payerId                                 String?
+  planName                                String?
+  memberId_enc                            String
+  memberId_hash                           String
+  groupNumber_enc                         String?
+  groupNumber_hash                        String?
+  subscriberName                          String?
+  subscriberDOB                           DateTime?
+  relationshipToSubscriber                InsuranceRelation?
+  employer                                String?
+  coverageStart                           DateTime?
+  coverageEnd                             DateTime?
+  status                                  InsuranceStatus     @default(PENDING_REVIEW)
+  source                                  InsuranceSource     @default(OFFICE)
+  verificationSource                      VerificationSource? @default(CLEARINGHOUSE)
+  verificationStatus                      String?
+  verificationRef                         String?
+  verificationPayload                     Json?
+  verificationError                       String?
+  verifiedAt                              DateTime?
+  lastCheckedAt                           DateTime?
+  verifyAttemptCount                      Int                 @default(0)
+  nextVerifyAt                            DateTime?
+  isActive                                Boolean             @default(true)
+  createdByUserId                         String?
+  reviewedByUserId                        String?
+  reviewNotes                             String?
+  createdAt                               DateTime            @default(now())
+  updatedAt                               DateTime
+  Business                                Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  users_Insurance_createdByUserIdTousers  users?              @relation("Insurance_createdByUserIdTousers", fields: [createdByUserId], references: [id])
+  Patient                                 Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  users_Insurance_reviewedByUserIdTousers users?              @relation("Insurance_reviewedByUserIdTousers", fields: [reviewedByUserId], references: [id])
+
+  @@unique([businessId, patientId, memberId_hash])
+  @@index([businessId, memberId_hash])
+  @@index([businessId, payerName])
+  @@index([patientId, isActive])
+}
+
+model Invoice {
+  id             String           @id
+  businessId     String
+  patientId      String
+  scanId         String?
+  scanLinkId     String?
+  type           InvoiceType      @default(OOP)
+  amountDue      Int
+  currency       String           @default("usd")
+  status         InvoiceStatus    @default(UNPAID)
+  externalRef    String?
+  notes          Json?
+  createdAt      DateTime         @default(now())
+  dueAt          DateTime?
+  Business       Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  Scan           Scan?            @relation(fields: [scanId], references: [id])
+  ScanLink       ScanLink?        @relation(fields: [scanLinkId], references: [id])
+  InvoiceLine    InvoiceLine[]
+  InvoicePayment InvoicePayment[]
+
+  @@unique([scanLinkId, type])
+  @@index([businessId])
+  @@index([patientId])
+  @@index([status])
+}
+
+model InvoiceLine {
+  id          String  @id
+  invoiceId   String
+  cdtCode     String?
+  description String
+  tooth       String?
+  surfaces    String?
+  qty         Int     @default(1)
+  unitPrice   Int
+  total       Int
+  Invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model InvoicePayment {
+  id                    String               @id
+  invoiceId             String
+  method                InvoicePaymentMethod
+  externalTxnId         String?
+  stripePaymentIntentId String?
+  amount                Int
+  status                InvoiceStatus        @default(PAID)
+  paidAt                DateTime?
+  receiptUrl            String?
+  Invoice               Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model InvoiceTemplateSetting {
+  businessId String   @id
+  template   Json
+  logoPath   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model JurisdictionAgreement {
+  id                   String                      @id
+  businessId           String
+  templateId           String
+  status               JurisdictionAgreementStatus @default(PENDING)
+  archivedAt           DateTime?
+  version              Int
+  renderedBody         String
+  unsignedPdfPath      String?
+  signedPdfPath        String?
+  createdAt            DateTime                    @default(now())
+  signedAt             DateTime?
+  effectiveDate        DateTime?
+  signedByUserId       String?
+  signedByName         String?
+  signedByEmail        String?
+  signerTitle          String?
+  documentHash         String?
+  Business             Business                    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  users                users?                      @relation(fields: [signedByUserId], references: [id])
+  JurisdictionTemplate JurisdictionTemplate        @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, templateId])
+  @@index([businessId, status])
+}
+
+model JurisdictionTemplate {
+  id                    String                  @id
+  key                   String
+  title                 String
+  description           String?
+  country               String?
+  state                 String?
+  region                String?
+  templateType          LegalTemplateType       @default(BAA)
+  isRequired            Boolean                 @default(true)
+  version               Int                     @default(1)
+  body                  String
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  JurisdictionAgreement JurisdictionAgreement[]
+
+  @@unique([key, version])
+}
+
+model List {
+  id          String        @id
+  userId      String
+  name        String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime
+  users       users         @relation(fields: [userId], references: [id])
+  ListContact ListContact[]
+}
+
+model ListContact {
+  id        String   @id
+  listId    String
+  contactId String
+  contacts  contacts @relation(fields: [contactId], references: [id])
+  List      List     @relation(fields: [listId], references: [id])
+
+  @@unique([listId, contactId])
+}
+
+model Patient {
+  id                   String             @id
+  businessId           String
+  firstName            String
+  lastName             String
+  fullName             String
+  email                String?
+  phone                String?
+  scanCadence          ScanCadence        @default(MONTHLY)
+  scanCadenceReason    String?
+  scanCadenceUpdatedAt DateTime?
+  consentVersion       String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime
+  dob                  DateTime?
+  sex                  Sex?
+  consentStatus        ConsentStatus?     @default(PENDING)
+  consentDate          DateTime?
+  consentFileUrl       String?
+  consentCollectedBy   String?
+  consentCollectedAt   DateTime?
+  auditReference       String?
+  clinicLocation       String?
+  treatingProvider     String?
+  languagePreference   String?
+  timezone             String?
+  guardianName         String?
+  guardianRelationship String?
+  guardianPhone        String?
+  guardianEmail        String?
+  Insurance            Insurance[]
+  Invoice              Invoice[]
+  Business             Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  PatientConsent       PatientConsent[]
+  Scan                 Scan[]
+  ScanJob              ScanJob[]
+  ScanLink             ScanLink[]
+  ScanRequest          ScanRequest[]
+  ScanSubscription     ScanSubscription[]
+
+  @@unique([businessId, email])
+  @@unique([businessId, phone])
+  @@index([businessId])
+}
+
+model PatientConsent {
+  id                     String                 @id
+  businessId             String
+  patientId              String
+  templateId             String
+  templateVersionId      String
+  status                 ConsentStatus          @default(ON_FILE)
+  signedFullName         String
+  signedAt               DateTime
+  signedByUserId         String?
+  signedIp               String?
+  signedUserAgent        String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime
+  Business               Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Patient                Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  users                  users?                 @relation(fields: [signedByUserId], references: [id])
+  ConsentTemplate        ConsentTemplate        @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  ConsentTemplateVersion ConsentTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, patientId])
+  @@index([patientId, status])
+}
+
+model Provider {
+  id        String   @id
+  userId    String   @unique
+  npi       String?
+  tin       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProviderConfig {
+  id                String   @id
+  businessId        String   @unique
+  primaryProvider   String   @default("twilio")
+  backupProvider    String?
+  regionPreferences Json?
+  Business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Scan {
+  id                    String             @id
+  businessId            String
+  patientId             String
+  scanLinkId            String?
+  status                ScanStatus         @default(SUBMITTED)
+  filePath              String?
+  imageUrl              String?
+  inputType             ScanInputType?
+  source                String?
+  notes                 String?
+  qualityScore          Float?
+  submittedBy           SubmissionSource?
+  metadata              Json?
+  patientConsentAt      DateTime?
+  patientConsentVersion String?
+  createdAt             DateTime           @default(now())
+  processedAt           DateTime?
+  paymentPreference     PaymentPreference?
+  Invoice               Invoice[]
+  Business              Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Patient               Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  ScanLink              ScanLink?          @relation(fields: [scanLinkId], references: [id])
+  ScanRequest           ScanRequest[]
+  ScanResult            ScanResult?
+
+  @@index([businessId, patientId, createdAt])
+  @@index([status])
+}
+
+model ScanJob {
+  id              String        @id
+  businessId      String
+  patientId       String
+  scanLinkId      String
+  type            ScanJobType   @default(SEND_LINK)
+  status          ScanJobStatus @default(SCHEDULED)
+  scheduledSendAt DateTime
+  attempts        Int           @default(0)
+  lastError       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime
+  Business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Patient         Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  ScanLink        ScanLink      @relation(fields: [scanLinkId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, scheduledSendAt, status])
+}
+
+model ScanLink {
+  id                String             @id
+  businessId        String
+  patientId         String?
+  createdByUserId   String
+  purpose           String             @default("dental_scan")
+  tokenHash         String             @unique
+  formMode          ScanFormMode       @default(SILENT)
+  intendedChannel   String
+  intendedContact   String
+  expiresAt         DateTime
+  maxUses           Int                @default(1)
+  uses              Int                @default(0)
+  isRevoked         Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  submittedAt       DateTime?
+  prefillFirstName  String?
+  prefillLastName   String?
+  prefillFullName   String?
+  prefillEmail      String?
+  prefillPhone      String?
+  prefillDob        DateTime?
+  prefillSex        Sex?
+  prefillPayerName  String?
+  prefillMemberId   String?
+  paymentPreference PaymentPreference?
+  Invoice           Invoice[]
+  Scan              Scan[]
+  ScanJob           ScanJob[]
+  Business          Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  users             users              @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  Patient           Patient?           @relation(fields: [patientId], references: [id])
+  ScanRequest       ScanRequest[]
+
+  @@index([businessId])
+  @@index([expiresAt])
+  @@index([isRevoked])
+}
+
+model ScanRequest {
+  id              String    @id
+  businessId      String
+  patientId       String
+  scanLinkId      String?
+  dueBy           DateTime?
+  status          String    @default("scheduled")
+  sentAt          DateTime?
+  completedScanId String?
+  expiredAt       DateTime?
+  createdAt       DateTime  @default(now())
+  remindersSent   Int       @default(0)
+  maxReminders    Int       @default(3)
+  lastResendAt    DateTime?
+  Business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Scan            Scan?     @relation(fields: [completedScanId], references: [id])
+  Patient         Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  ScanLink        ScanLink? @relation(fields: [scanLinkId], references: [id])
+
+  @@index([businessId])
+  @@index([patientId, createdAt])
+  @@index([status, dueBy])
+}
+
+model ScanResult {
+  id              String   @id
+  scanId          String   @unique
+  modelVersion    String
+  summary         String
+  findings        Json
+  confidence      Float?
+  recommendations Json?
+  overlayImageUrl String?
+  createdAt       DateTime @default(now())
+  Scan            Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+}
+
+model ScanShortLink {
+  id              String    @id
+  code            String    @unique
+  url             String
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime?
+  createdByUserId String?
+  users           users?    @relation(fields: [createdByUserId], references: [id])
+}
+
+model ScanSubscription {
+  id                 String      @id
+  businessId         String
+  patientId          String
+  cadence            ScanCadence @default(MONTHLY)
+  deliverVia         String      @default("sms")
+  preferredHour      Int         @default(10)
+  quietHours         Json?
+  nextSendAt         DateTime?
+  lastSentAt         DateTime?
+  lastCompletedAt    DateTime?
+  isActive           Boolean     @default(true)
+  retryIntervalHours Int         @default(24)
+  retryAttempts      Int         @default(0)
+  maxRetryAttempts   Int         @default(3)
+  lastRetryAt        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime
+  lockedAt           DateTime?
+  Business           Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  Patient            Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, patientId])
+  @@index([businessId])
+  @@index([lastRetryAt, retryAttempts])
+  @@index([nextSendAt, isActive])
+}
+
+model TextCampaign {
+  id                   String                 @id
+  userId               String
+  name                 String
+  message              String
+  optOutLink           Boolean                @default(true)
+  sendDate             DateTime?
+  timeZone             String?
+  senderNumber         String?
+  status               String                 @default("draft")
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  Attachment           Attachment[]
+  users                users                  @relation(fields: [userId], references: [id])
+  TextCampaignContact  TextCampaignContact[]
+  TextCampaignFollowUp TextCampaignFollowUp[]
+}
+
+model TextCampaignContact {
+  id                          String                        @id
+  textCampaignId              String
+  contactId                   String
+  status                      String                        @default("pending")
+  lastActivity                DateTime?
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime
+  contacts                    contacts                      @relation(fields: [contactId], references: [id])
+  TextCampaign                TextCampaign                  @relation(fields: [textCampaignId], references: [id])
+  TextCampaignContactFollowUp TextCampaignContactFollowUp[]
+}
+
+model TextCampaignContactFollowUp {
+  id                     String               @id
+  textCampaignContactId  String
+  textCampaignFollowUpId String
+  sentAt                 DateTime?
+  TextCampaignContact    TextCampaignContact  @relation(fields: [textCampaignContactId], references: [id])
+  TextCampaignFollowUp   TextCampaignFollowUp @relation(fields: [textCampaignFollowUpId], references: [id])
+
+  @@unique([textCampaignContactId, textCampaignFollowUpId])
+}
+
+model TextCampaignFollowUp {
+  id                          String                        @id
+  textCampaignId              String
+  delayMinutes                Int
+  followupTemplate            String?
+  stopIfReplied               Boolean                       @default(true)
+  tags                        String[]
+  createdAt                   DateTime                      @default(now())
+  TextCampaignContactFollowUp TextCampaignContactFollowUp[]
+  TextCampaign                TextCampaign                  @relation(fields: [textCampaignId], references: [id])
+}
+
+model TextCampaignTemplate {
+  id        String   @id
+  userId    String
+  name      String   @unique
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model TrialKey {
+  id               String    @id
+  kind             String
+  valueHash        String    @unique
+  firstUsedAt      DateTime?
+  lastUsedAt       DateTime?
+  times            Int       @default(0)
+  stripeCustomerId String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+
+  @@index([kind])
+  @@index([valueHash])
+}
+
+model TwilioA2PEventLog {
+  id            String   @id
+  receivedAt    DateTime @default(now())
+  eventType     String?
+  status        String?
+  accountSid    String?
+  schemaVersion String?
+  brandSid      String?
+  campaignSid   String?
+  numberSid     String?
+  errorCode     String?
+  errorMessage  String?
+  payload       Json?
+
+  @@index([brandSid])
+  @@index([campaignSid])
+  @@index([eventType])
+  @@index([numberSid])
+}
+
+model UserCredential {
+  id             String  @id
+  userId         String  @unique
+  calendarTokens String?
+  users          users   @relation(fields: [userId], references: [id])
+}
+
+model agents {
+  id                  String    @id
+  userId              String
+  agentId             String    @unique
+  llmId               String    @unique
+  name                String    @unique
+  script              String
+  voice_id            String
+  timezone            String?
+  startTime           String?
+  endTime             String?
+  SMSBackup           Boolean?
+  fallbackTemplate    String?
+  followupDelay       Int?
+  transferToHuman     Boolean?
+  fallbackToVoicemail Boolean?
+  optOutLogic         Boolean?
+  personality         String
+  responseSpeed       Int
+  generalTools        String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  deletedAt           DateTime?
+  smsScript           String?
+  paused              Boolean   @default(false)
+  Call                Call[]
+  users               users     @relation(fields: [userId], references: [id])
+}
+
+model business_messaging_services {
+  id            String   @id
+  businessId    String   @unique
+  serviceSid    String?
+  campaignSid   String?
+  status        String?
+  lastEventType String?
+  lastError     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  Business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model business_phone_numbers {
+  id                  String   @id
+  businessId          String
+  phoneNumber         String   @unique
+  twilioSid           String?  @unique
+  accountSid          String?
+  friendlyName        String?
+  voiceUrl            String?
+  smsUrl              String?
+  statusCallback      String?
+  apiVersion          String?
+  uri                 String?
+  messagingServiceSid String?
+  campaignSid         String?
+  capabilities        Json?
+  provider            String   @default("twilio")
+  providerId          String?
+  providerMetadata    Json?
+  status              String   @default("active")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime
+  Business            Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([provider])
+}
+
+model business_profiles {
+  userId          String   @id
+  businessName    String?
+  businessWebsite String?
+  industry        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  users           users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model campaign_contacts {
+  id           String    @id
+  campaignId   String
+  contactId    String
+  status       String    @default("pending")
+  callAttempts Int       @default(0)
+  lastActivity DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  campaigns    campaigns @relation(fields: [campaignId], references: [id])
+  contacts     contacts  @relation(fields: [contactId], references: [id])
+
+  @@unique([campaignId, contactId])
+  @@index([campaignId])
+  @@index([contactId])
+}
+
+model campaigns {
+  id                String              @id
+  userId            String
+  name              String              @unique
+  description       String?
+  config            Json?
+  status            String              @default("draft")
+  type              String              @default("call")
+  targetAudience    Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  campaign_contacts campaign_contacts[]
+  users             users               @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model charity_scans {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  short_code                  String    @unique @db.VarChar(32)
+  business_id                 String?   @db.Uuid
+  patient_name                String
+  patient_email               String?
+  patient_phone               String
+  date_of_birth               DateTime
+  is_minor                    Boolean   @default(false)
+  guardian_name               String?
+  guardian_relationship       String?
+  guardian_consent_given      Boolean   @default(false)
+  guardian_consent_timestamp  DateTime?
+  guardian_ip_address         String?
+  guardian_user_agent         String?
+  consent_method              String?
+  non_diagnostic_acknowledged Boolean   @default(false)
+  screening_consent_given     Boolean   @default(false)
+  created_at                  DateTime  @default(now())
+  updated_at                  DateTime
+  completed_at                DateTime?
+  brightness_score            Decimal?  @db.Decimal(10, 2)
+  shade_value                 String?
+  ideal_shade                 String?
+  status                      String?   @default("pending")
+  simplified_status           String?
+  clinic_recommended          Boolean   @default(false)
+  care_priority_score         String?
+  original_json               Json?
+  result_json                 Json?
+
+  @@index([business_id])
+  @@index([created_at])
+  @@index([guardian_consent_given], map: "charity_scans_guardian_consent_idx")
+  @@index([is_minor])
+  @@index([patient_phone], map: "charity_scans_phone_idx")
+  @@index([status])
+}
+
+model contacts {
+  id                  String                @id
+  userId              String?
+  Name                String
+  email               String?               @unique
+  phone               String                @unique
+  category            String?
+  source              String
+  status              String                @default("pending")
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  Call                Call[]
+  ListContact         ListContact[]
+  TextCampaignContact TextCampaignContact[]
+  campaign_contacts   campaign_contacts[]
+  users               users?                @relation(fields: [userId], references: [id])
+  threads             threads[]
+
+  @@index([userId])
+}
+
+model employer_scans {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  short_code        String    @unique @db.VarChar(32)
+  business_id       String?   @db.Uuid
+  patient_name      String
+  patient_email     String?
+  patient_phone     String
+  date_of_birth     DateTime
+  created_at        DateTime  @default(now())
+  updated_at        DateTime
+  completed_at      DateTime?
+  status            String?   @default("pending")
+  simplified_status String?
+  original_json     Json?
+  result_json       Json?
+
+  @@index([business_id])
+  @@index([created_at])
+  @@index([patient_phone], map: "employer_scans_phone_idx")
+  @@index([status])
+}
+
+model gym_scans {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  short_code         String    @unique @db.VarChar(32)
+  business_id        String?   @db.Uuid
+  patient_name       String
+  patient_email      String?
+  patient_phone      String
+  date_of_birth      DateTime
+  created_at         DateTime  @default(now())
+  updated_at         DateTime
+  completed_at       DateTime?
+  brightness_score   Decimal?  @db.Decimal(10, 2)
+  shade_value        String?
+  ideal_shade        String?
+  status             String?   @default("pending")
+  simplified_status  String?
+  clinic_recommended Boolean   @default(false)
+  original_json      Json?
+  result_json        Json?
+
+  @@index([business_id])
+  @@index([created_at])
+  @@index([patient_phone], map: "gym_scans_phone_idx")
+  @@index([status])
+}
+
+model logs_ai {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event       String
+  message_sid String?
+  from_phone  String?
+  to_phone    String?
+  text        String?
+  source      String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model messages {
+  id        String   @id
+  threadId  String
+  content   String
+  channel   String
+  direction String
+  status    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  threads   threads  @relation(fields: [threadId], references: [id])
+
+  @@index([threadId])
+}
+
+model multiuse_business {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  public_code       String          @unique @db.VarChar(32)
+  name              String
+  organization_type String
+  phone             String?
+  email             String?
+  street_address    String?
+  city              String?
+  state             String?
+  zip_code          String?
+  country           String          @default("US")
+  status            String          @default("ACTIVE")
+  created_at        DateTime        @default(now())
+  updated_at        DateTime
+  metadata          Json?
+  password          String?
+  charity_program   CharityProgram?
+
+  @@index([organization_type], map: "multiuse_business_type_idx")
+}
+
+model n2_business {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  twilio_phone      String              @unique
+  calendar_link     String?
+  business_phone    String?
+  business_hours    String?
+  business_address  String?
+  pricing_link      String?
+  service_list      String?
+  wait_time         String?
+  locale            String?             @default("en-US")
+  quiet_hours_start DateTime?           @db.Time(6)
+  quiet_hours_end   DateTime?           @db.Time(6)
+  enable_followups  Boolean?            @default(true)
+  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  timezone          String?             @default("America/New_York")
+  n2_contacts_state n2_contacts_state[]
+  n2_logs           n2_logs[]
+  n2_opt_outs       n2_opt_outs[]
+  n2_rules          n2_rules[]
+  n2_templates      n2_templates[]
+}
+
+model n2_contacts_state {
+  business_id       String      @db.Uuid
+  contact_phone     String
+  state             String      @default("new")
+  last_outbound_at  DateTime?   @db.Timestamptz(6)
+  last_inbound_at   DateTime?   @db.Timestamptz(6)
+  last_template_key String?
+  n2_business       n2_business @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([business_id, contact_phone])
+}
+
+model n2_logs {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_id       String?      @db.Uuid
+  contact_phone     String
+  direction         String
+  text              String?
+  applied_rule_id   String?      @db.Uuid
+  template_key      String?
+  llm_fallback_used Boolean?     @default(false)
+  idempotency_key   String?
+  created_at        DateTime?    @default(now()) @db.Timestamptz(6)
+  n2_business       n2_business? @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([business_id, contact_phone, idempotency_key], map: "idx_n2_logs_idem")
+}
+
+model n2_opt_outs {
+  business_id   String      @db.Uuid
+  contact_phone String
+  reason        String
+  created_at    DateTime?   @default(now()) @db.Timestamptz(6)
+  is_active     Boolean     @default(true)
+  updated_at    DateTime?   @default(now()) @db.Timestamptz(6)
+  n2_business   n2_business @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([business_id, contact_phone])
+}
+
+model n2_rules {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_id    String?      @db.Uuid
+  priority       Int
+  match_type     String
+  match_payload  Json?
+  action_type    String
+  action_payload Json?
+  active         Boolean?     @default(true)
+  n2_business    n2_business? @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([business_id, priority])
+}
+
+model n2_templates {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_id String?      @db.Uuid
+  key         String
+  body        String
+  active      Boolean?     @default(true)
+  version     Int?         @default(1)
+  n2_business n2_business? @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([business_id, key])
+}
+
+model onboarding_applications {
+  id                    String    @id
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime
+  businessName          String
+  website               String
+  address1              String
+  address2              String?
+  city                  String
+  state                 String
+  zip                   String
+  country               String
+  businessNumber        String?
+  contactFirstName      String
+  contactLastName       String
+  contactEmail          String
+  contactPhone          String
+  ctaOption             String?
+  ctaLink               String?
+  ctaScreenshotsCount   Int?
+  ctaScreenshotsUrls    String[]
+  sampleMessage         String?
+  selectedTemplateLabel String?
+  monthlyVolume         String
+  useCases              String[]
+  status                String    @default("pending")
+  reviewNotes           String?
+  reviewedAt            DateTime?
+  reviewedBy            String?
+  submittedData         Json?
+}
+
+model phone_numbers {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phoneNumber           String                  @unique @db.VarChar(20)
+  status                Boolean                 @default(true)
+  createdAt             DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime                @default(now()) @db.Timestamptz(6)
+  deletedAt             DateTime?               @db.Timestamptz(6)
+  A2PNumberRegistration A2PNumberRegistration[]
+  user_phone_numbers    user_phone_numbers[]
+}
+
+model phone_verifications {
+  id          String    @id
+  userId      String?
+  destination String
+  codeHash    String?
+  sentAt      DateTime  @default(now())
+  verifiedAt  DateTime?
+  expiresAt   DateTime?
+  attempts    Int       @default(0)
+  users       users?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model practice_external_payment_links {
+  id         String   @id
+  businessId String
+  label      String
+  url        String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, sortOrder])
+}
+
+model practice_payment_settings {
+  businessId         String   @id
+  externalPaymentUrl String?
+  stripeAccountId    String?
+  stripeEnabled      Boolean  @default(false)
+  allowPartial       Boolean  @default(false)
+  allowInstallments  Boolean  @default(false)
+  taxEnabled         Boolean  @default(false)
+  defaultTaxRate     Decimal? @db.Decimal(5, 2)
+  Business           Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model subscriptions {
+  id                   String    @id
+  userId               String
+  provider             String    @default("stripe")
+  stripeSubscriptionId String?   @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
+  status               String
+  plan                 String?
+  currency             String?
+  unitAmount           Int?
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAt             DateTime?
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime
+  users                users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model threads {
+  id        String     @id
+  contactId String
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime
+  label     String?
+  messages  messages[]
+  contacts  contacts   @relation(fields: [contactId], references: [id])
+  users     users      @relation(fields: [userId], references: [id])
+
+  @@index([contactId])
+  @@index([userId])
+}
+
+model us_zip_code {
+  objectid             String  @id @db.VarChar(50)
+  createdat            String?
+  updatedat            String?
+  acl                  String?
+  area_codes           String?
+  us_zip_code          Int?
+  country              String? @db.VarChar(5)
+  acceptable_cities    String?
+  type                 String? @db.VarChar(50)
+  longitude            Float?
+  primary_city         String? @db.VarChar(100)
+  latitude             Float?
+  county               String? @db.VarChar(100)
+  unacceptable_cities  String?
+  estimated_population BigInt?
+  state                String? @db.VarChar(10)
+  timezone             String? @db.VarChar(50)
+  remarks              String?
+}
+
+model user_phone_numbers {
+  id            String        @id
+  userId        String
+  phoneNumberId String        @db.Uuid
+  assignedAt    DateTime      @default(now())
+  releasedAt    DateTime?
+  phone_numbers phone_numbers @relation(fields: [phoneNumberId], references: [id])
+  users         users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phoneNumberId])
+  @@index([userId])
+}
+
+model users {
+  id                                          String                   @id
+  fullName                                    String
+  email                                       String                   @unique
+  phone                                       String
+  assigned                                    Boolean                  @default(false)
+  assigned_number                             String?
+  status                                      String                   @default("new")
+  avatar_url                                  String?
+  password                                    String
+  created_at                                  DateTime                 @default(now())
+  updated_at                                  DateTime
+  phone_agent_enabled                         Boolean                  @default(false)
+  billingMode                                 String?
+  initialPlanId                               String?
+  phoneVerifiedAt                             DateTime?
+  stripeCustomerId                            String?                  @unique
+  tosAcceptedAt                               DateTime?
+  emailVerified                               Boolean                  @default(false)
+  lastOtpSentAt                               DateTime?
+  otpCode                                     String?
+  otpExpiry                                   DateTime?
+  A2PBrand                                    A2PBrand[]
+  A2PCampaign                                 A2PCampaign[]
+  A2PNumberRegistration                       A2PNumberRegistration[]
+  AgentDraft                                  AgentDraft[]
+  AuditLog                                    AuditLog[]
+  Business                                    Business?
+  Call                                        Call[]
+  ConsentTemplateVersion                      ConsentTemplateVersion[]
+  DataExportRequest                           DataExportRequest[]
+  FrequentlySentGroup                         FrequentlySentGroup[]
+  GoogleToken                                 GoogleToken?
+  ImportJob                                   ImportJob[]
+  Insurance_Insurance_createdByUserIdTousers  Insurance[]              @relation("Insurance_createdByUserIdTousers")
+  Insurance_Insurance_reviewedByUserIdTousers Insurance[]              @relation("Insurance_reviewedByUserIdTousers")
+  JurisdictionAgreement                       JurisdictionAgreement[]
+  List                                        List[]
+  PatientConsent                              PatientConsent[]
+  Provider                                    Provider?
+  ScanLink                                    ScanLink[]
+  ScanShortLink                               ScanShortLink[]
+  TextCampaign                                TextCampaign[]
+  UserCredential                              UserCredential?
+  agents                                      agents[]
+  business_profiles                           business_profiles?
+  campaigns                                   campaigns[]
+  contacts                                    contacts[]
+  phone_verifications                         phone_verifications[]
+  subscriptions                               subscriptions[]
+  threads                                     threads[]
+  user_phone_numbers                          user_phone_numbers[]
+}
+
+enum ConsentStatus {
+  ON_FILE
+  PENDING
+  EXPIRED
+  WITHDRAWN
+}
+
+enum ConsentTemplateScope {
+  GLOBAL
+  BUSINESS
+}
+
+enum DataExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ImportJobRowStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+enum ImportJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum ImportJobType {
+  PATIENT_PMS_IMPORT
+}
+
+enum InsuranceRelation {
+  SELF
+  SPOUSE
+  CHILD
+  OTHER
+}
+
+enum InsuranceSource {
+  OFFICE
+  PATIENT
+}
+
+enum InsuranceStatus {
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum InvoicePaymentMethod {
+  CASH
+  EXTERNAL_PORTAL
+  STRIPE
+  OTHER
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  REFUNDED
+  VOID
+}
+
+enum InvoiceType {
+  OOP
+  PLAN
+  COPAY
+}
+
+enum JurisdictionAgreementStatus {
+  PENDING
+  SIGNED
+  EXPIRED
+  REVOKED
+  ARCHIVED
+}
+
+enum LegalTemplateType {
+  BAA
+  DPA
+  ADDENDUM
+  TELEHEALTH
+}
+
+enum PaymentPreference {
+  INSURANCE
+  OUT_OF_POCKET
+}
+
+enum ScanCadence {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  PAUSED
+}
+
+enum ScanFormMode {
+  SILENT
+  MINIMAL
+  FULL
+}
+
+enum ScanInputType {
+  XRAY
+  PHOTO
+  INTRAORAL
+}
+
+enum ScanJobStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELED
+}
+
+enum ScanJobType {
+  SEND_LINK
+}
+
+enum ScanStatus {
+  DRAFT
+  SUBMITTED
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  TRANSGENDER
+  NON_BINARY
+  OTHER
+  UNKNOWN
+  PREFER_NOT_TO_SAY
+}
+
+enum SubmissionSource {
+  PATIENT
+  GUARDIAN
+  CLINIC
+  UNKNOWN
+}
+
+enum VerificationSource {
+  CLEARINGHOUSE
+  MANUAL
+  NONE
 }
