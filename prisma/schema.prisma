@@ -23,6 +23,70 @@ model DentalLead {
   @@map("DentalLead")
 }
 
+model DemoDentist {
+  id        String        @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  createdAt DateTime      @default(now())
+
+  patients  DemoPatient[]
+  scans     DemoScan[]
+
+  @@map("demo_dentist")
+}
+
+model DemoPatient {
+  id        String      @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  createdAt DateTime    @default(now())
+
+  dentist   DemoDentist @relation(fields: [dentistId], references: [id])
+  dentistId String
+
+  scans     DemoScan[]
+
+  @@map("demo_patient")
+}
+
+model DemoScan {
+  id          String        @id @default(cuid())
+  status      String        @default("link_sent") // link_sent | submitted | completed
+  imageUrls   Json?
+  result      Json?
+  createdAt   DateTime      @default(now())
+  submittedAt DateTime?
+  completedAt DateTime?
+
+  dentist     DemoDentist?  @relation(fields: [dentistId], references: [id])
+  dentistId   String?
+
+  patient     DemoPatient?  @relation(fields: [patientId], references: [id])
+  patientId   String?
+
+  // NEW: short links associated with this scan
+  links       DemoScanLink[]
+
+  @@map("demo_scan")
+}
+
+model DemoScanLink {
+  id        String      @id @default(cuid())
+  code      String      @unique        // e.g. "AB3F9X2K"
+  scan      DemoScan    @relation(fields: [scanId], references: [id])
+  scanId    String
+
+  dentistId String?
+  patientId String?
+
+  createdAt DateTime    @default(now())
+  expiresAt DateTime?
+
+  @@map("demo_scan_link")
+}
+
 model PartnerApplication {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   program        String   @db.VarChar(50)
