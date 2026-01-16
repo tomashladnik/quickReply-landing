@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       phone: scan.patient.phone,
       email: scan.patient.email,
       status: scan.status,
+      result: scan.result,
     });
   } catch (err) {
     console.error("[DEMO_SCAN] error", err);
