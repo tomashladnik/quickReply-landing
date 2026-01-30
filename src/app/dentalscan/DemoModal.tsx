@@ -48,12 +48,8 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
   const formatPhoneNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, "");
     if (cleaned.length <= 3) return cleaned;
-    if (cleaned.length <= 6)
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(
-      6,
-      10
-    )}`;
+    if (cleaned.length <= 6) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,29 +72,31 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
       return;
     }
 
+    if (!name.trim()) {
+      setSubmitError("Please enter your name.");
+      return;
+    }
+
     setSubmitError(null);
     setIsSubmitting(true);
 
     try {
       const payload = {
+        name: name.trim(),
         phone: normalizedPhone,
         email: email.trim() || undefined,
         acceptsSmsTerms,
         pagePath:
           trackingData.pagePath ||
-          (typeof window !== "undefined"
-            ? window.location.pathname
-            : undefined),
+          (typeof window !== "undefined" ? window.location.pathname : undefined),
         utmSource: trackingData.utmSource || undefined,
         utmMedium: trackingData.utmMedium || undefined,
         utmCampaign: trackingData.utmCampaign || undefined,
         notes:
-          [name && `Name: ${name}`, companyName && `Company: ${companyName}`]
-            .filter(Boolean)
-            .join(" | ") || undefined,
+          [companyName && `Company: ${companyName}`].filter(Boolean).join(" | ") || undefined,
       };
 
-      const res = await fetch("/api/dentalscan/contact-sales", {
+      const res = await fetch("/api/sales/send-demo", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -129,9 +127,7 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
       }, 3000);
     } catch (error) {
       setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again."
+        error instanceof Error ? error.message : "Something went wrong. Please try again."
       );
     } finally {
       setIsSubmitting(false);
@@ -149,19 +145,13 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
         </button>
 
         <div className="p-8">
-          <h3 className="text-3xl font-bold text-gray-900 mb-2">
-            Get Started with DentalScan
-          </h3>
-          <p className="text-gray-600 mb-6">
-            We&apos;ll send you a text with a link to try our live demo
-          </p>
+          <h3 className="text-3xl font-bold text-gray-900 mb-2">Get Started with DentalScan</h3>
+          <p className="text-gray-600 mb-6">We&apos;ll send you a text with a link to try our live demo</p>
 
           {!submitSuccess ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Name *
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
                 <input
                   type="text"
                   value={name}
@@ -173,9 +163,7 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                 <input
                   type="email"
                   value={email}
@@ -186,9 +174,7 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone *
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone *</label>
                 <input
                   type="tel"
                   value={phone}
@@ -199,7 +185,6 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
                 />
               </div>
 
-              {/* SMS consent checkbox + text */}
               <div className="flex items-start gap-2">
                 <input
                   id="sms-consent"
@@ -209,16 +194,14 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
                   required
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-[#4ebff7] focus:ring-[#4ebff7]"
                 />
-                <label
-                  htmlFor="sms-consent"
-                  className="text-xs text-gray-600 leading-relaxed"
-                >
+                <label htmlFor="sms-consent" className="text-xs text-gray-600 leading-relaxed">
                   By signing up via text, you agree to receive recurring{" "}
-                  <span className="font-semibold">DentalScan</span> messages from <span className="font-semibold">ReplyQuick</span> at the phone number provided. Consent is not a condition of purchase.
-                  Reply <span className="font-semibold">STOP</span> to
-                  unsubscribe. Reply <span className="font-semibold">HELP</span>{" "}
-                  for help. Message frequency varies. Msg &amp; data rates may
-                  apply. View our{" "}
+                  <span className="font-semibold">DentalScan</span> messages from{" "}
+                  <span className="font-semibold">ReplyQuick</span> at the phone number provided.
+                  Consent is not a condition of purchase. Reply{" "}
+                  <span className="font-semibold">STOP</span> to unsubscribe. Reply{" "}
+                  <span className="font-semibold">HELP</span> for help. Message frequency varies.
+                  Msg &amp; data rates may apply. View our{" "}
                   <a href="/privacy" className="underline hover:text-gray-800">
                     Privacy Policy
                   </a>{" "}
@@ -230,11 +213,7 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
                 </label>
               </div>
 
-              {submitError && (
-                <p className="text-sm text-red-600 text-center">
-                  {submitError}
-                </p>
-              )}
+              {submitError && <p className="text-sm text-red-600 text-center">{submitError}</p>}
 
               <button
                 type="submit"
@@ -256,12 +235,8 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="w-12 h-12 text-green-600" />
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-2">
-                Request Received!
-              </h4>
-              <p className="text-gray-600">
-                Thanks for reaching out. Our team will contact you shortly.
-              </p>
+              <h4 className="text-2xl font-bold text-gray-900 mb-2">Request Received!</h4>
+              <p className="text-gray-600">Check your phone for the demo link.</p>
             </div>
           )}
         </div>
