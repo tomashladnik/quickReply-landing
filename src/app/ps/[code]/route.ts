@@ -11,42 +11,36 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ code: string }> }
 ) {
-  // ⬅️ params is a Promise in Next 16 route handlers
   const { code } = await context.params;
 
-  // Look up the short-link
   const link = await prisma.demoScanLink.findUnique({
     where: { code },
-    include: { scan: true },
+    include: {
+      scan: {
+        include: { patient: true },
+      },
+    },
   });
 
-  // If no link or no scan → invalid
-  if (!link || !link.scan) {
+  if (!link || !link.scan || !link.scan.patient) {
     return NextResponse.redirect(new URL("/invalid-link", req.url));
   }
 
-  // Optional: expiry
   if (link.expiresAt && link.expiresAt < new Date()) {
     return NextResponse.redirect(new URL("/invalid-link", req.url));
   }
 
-  // Build JWT token for /patient-scan
   const token = jwt.sign(
     {
       scanId: link.scanId,
       patientId: link.scan.patientId ?? undefined,
-      dentistId: link.scan.dentistId ?? undefined,
       role: "DEMO_PATIENT",
+      code,
     },
     DEMO_SECRET,
     { expiresIn: "7d" }
   );
 
-  const target = new URL(
-    `/patient-scan?token=${encodeURIComponent(token)}`,
-    req.url
-  );
-
-  // 307 redirect to the real patient scan page
+  const target = new URL(`/patient-scan?token=${encodeURIComponent(token)}`, req.url);
   return NextResponse.redirect(target);
 }

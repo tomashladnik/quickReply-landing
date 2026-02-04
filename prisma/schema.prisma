@@ -58,10 +58,13 @@ model DemoScan {
   result      Json?
   createdAt   DateTime      @default(now())
   submittedAt DateTime?
-  completedAt DateTime?
 
   dentist     DemoDentist?  @relation(fields: [dentistId], references: [id])
   dentistId   String?
+
+  programCode String?       // "DS-3MO"
+  dob         DateTime?     // Identity Key
+  completedAt DateTime?     // The timestamp that "Starts the Clock"
 
   patient     DemoPatient?  @relation(fields: [patientId], references: [id])
   patientId   String?
@@ -752,6 +755,12 @@ model ProviderConfig {
   backupProvider    String?
   regionPreferences Json?
   Business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Program {
+  code         String   @id // e.g., "DS-3MO"
+  intervalDays Int      // e.g., 90
+  @@map("programs")
 }
 
 model Scan {
