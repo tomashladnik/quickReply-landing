@@ -756,6 +756,11 @@ model ProviderConfig {
   regionPreferences Json?
   Business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
+model Program {
+  code         String   @id // e.g., "DS-3MO"
+  intervalDays Int      // e.g., 90
+  @@map("programs")
+}
 
 model Scan {
   id                    String             @id
