@@ -60,6 +60,9 @@ model DemoScan {
   submittedAt DateTime?
   completedAt DateTime?
 
+  programCode String?       // "DS-3MO"
+  dob         DateTime?     // Identity Key
+
   dentist     DemoDentist?  @relation(fields: [dentistId], references: [id])
   dentistId   String?
 
