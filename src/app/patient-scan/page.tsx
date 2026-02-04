@@ -140,7 +140,6 @@ function PatientScanPageClient() {
       });
   
       const data = await response.json();
-      const HomePage = process.env.HOME_PAGE
   
       if (data.allowed === false) {
         setError(`You already completed this scan. Your next scan will be available on ${data.nextDate}.`);
