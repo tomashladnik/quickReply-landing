@@ -113,6 +113,6 @@ DentalScan by ReplyQuick AI`;
     });
   } catch (error) {
     console.error("[SALES/SEND_DEMO] fatal error", error);
-    return NextResponse.json({ ok: false, error: "Failed to send demo SMS" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: `Failed to send demo SMS :-${error}` }, { status: 500 });
   }
 }
