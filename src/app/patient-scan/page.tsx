@@ -150,7 +150,7 @@ function PatientScanPageClient() {
         
         //Redirect back to a landing page after 5 seconds so they can't stay on the form
         setTimeout(() => {
-          window.location.href = "http://localhost:3000/dentalscan" || `${HomePage}/dentalscan`; 
+          window.location.href = `${HomePage}/dentalscan`; 
         }, 5000);
         return;
       }
