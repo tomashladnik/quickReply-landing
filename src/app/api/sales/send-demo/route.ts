@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     });
 
     const scanUrl = `${APP_URL}/ps/${code}`;
-
+    console.log(scanUrl)
     const smsBody = `Hello ${name},
 Here is your secure DentalScan demo link: ${scanUrl}
 
