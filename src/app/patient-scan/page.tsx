@@ -27,6 +27,7 @@ function PatientScanPageClient() {
   const [submitted, setSubmitted] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState<string>("");
   const [result, setResult] = useState<any>(null);
+  const [accessCode, setAccessCode] = useState<string>("");
 
   useEffect(() => {
     fetchPatientData();
@@ -110,9 +111,16 @@ function PatientScanPageClient() {
     return age;
   };
 
-  const handleNext = () => {
-    if (!dateOfBirth) {
-      setError("Please enter your date of birth");
+  //Program code logic starts here
+
+  const normalizeProgramCode = (code: string) => {
+    return code.toUpperCase().trim().replace(/\s+/g, '-').replace('MONTH', 'MO');
+  };
+  // ---------------------------------------------------------------
+
+  const handleNext = async () => {
+    if (!dateOfBirth || !accessCode) {
+      setError("Please fill all fields and accept consent.");
       return;
     }
     const age = calculateAge(dateOfBirth);
@@ -120,14 +128,62 @@ function PatientScanPageClient() {
       setError("You must be at least 14 years old to use this service");
       return;
     }
-    setError(null);
-    setCurrentStep(2);
+  
+    setLoading(true);
+    try {
+      const response = await fetch("/api/demo/check-eligibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          dob: dateOfBirth,
+          program_code: normalizeProgramCode(accessCode),
+        }),
+      });
+  
+      const data = await response.json();
+      const HomePage = process.env.HOME_PAGE
+  
+      if (data.allowed === false) {
+        setError(`You already completed this scan. Your next scan will be available on ${data.nextDate}.`);
+        setLoading(false);
+        
+        //Redirect back to a landing page after 5 seconds so they can't stay on the form
+        setTimeout(() => {
+          window.location.href = "http://localhost:3000/dentalscan" || `${HomePage}/dentalscan`; 
+        }, 5000);
+        return;
+      }
+  
+      if (!response.ok) throw new Error(data.error || "Invalid code.");
+  
+      // SCENARIO: ELIGIBLE
+      setCurrentStep(2); // Move to PatientImageCapture
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+  // --------------------------------------------------------
 
-  const handleComplete = (res?: any) => {
+  // 
+  
+  const handleComplete = async (res?: any) => {
     setSubmitted(true);
     if (res?.result) setResult(res.result);
-    else setResult(null);
+    
+    // CRITICAL: Mark the scan as 'completed' and save the DOB/Code to the session
+    await fetch("/api/demo/submit-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        token, 
+        status: "completed", 
+        dob: dateOfBirth, 
+        programCode: normalizeProgramCode(accessCode) 
+      }),
+    });
   };
 
   // ---------- Result formatting helpers ----------
@@ -543,7 +599,28 @@ function PatientScanPageClient() {
                 />
                 <p className="mt-1 text-[10px] text-gray-500">You must be at least 14 years old</p>
               </div>
-            </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Access Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter code (example: DS-3MO)"
+                    value={accessCode}
+                    onChange={(e) => {
+                      // Auto-uppercase as user types [cite: 21]
+                      setAccessCode(e.target.value.toUpperCase());
+                      if (error) setError(null);
+                    }}
+                    required
+                    className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-[#4ebff7] focus:border-transparent transition-all"
+                  />
+                  <p className="mt-1 text-[10px] text-gray-500">
+                    Code is provided by your program administrator. [cite: 32]
+                  </p>
+              </div>
+              
 
             <div className="mt-4 pt-3 border-t border-gray-200">
               <p className="text-xs text-gray-500 text-center">Step 1 of 2</p>
@@ -562,6 +639,7 @@ function PatientScanPageClient() {
               >
                 Continue
               </button>
+            </div>
             </div>
           </div>
         </main>
