@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "DentalLead" (
+CREATE TABLE IF NOT EXISTS "DentalLead" (
     "id" TEXT NOT NULL,
     "source" TEXT NOT NULL DEFAULT 'contact_sales',
     "phone" TEXT,

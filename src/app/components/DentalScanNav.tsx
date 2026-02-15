@@ -12,7 +12,7 @@ interface DentalScanNavProps {
 export default function DentalScanNav({ activePage, onOpenDemo }: DentalScanNavProps) {
   const isMainPage = activePage === 'home';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+const DASHBOARD_URL = "https://dashboard.replyquick.ai/entrance/dentalscan/select-organization";  
   return (
     <>
       <header className="sticky top-0 z-50 w-full h-[80px] bg-white shadow-[0_0_22px_#4ebff740] backdrop-blur-lg flex items-center px-4 sm:px-6 md:px-10 lg:px-58">
@@ -36,7 +36,8 @@ export default function DentalScanNav({ activePage, onOpenDemo }: DentalScanNavP
           <a href={isMainPage ? "#how-it-works" : "/dentalscan#how-it-works"} className="font-medium text-black text-base hover:text-gray-600 transition-colors">How It Works</a>
           <a href={isMainPage ? "#faq" : "/dentalscan#faq"} className="font-medium text-black text-base hover:text-gray-600 transition-colors">FAQ</a>
         </nav>
-        <div className="hidden md:flex">
+        <div className="hidden md:flex gap-x-3">
+          <a href={DASHBOARD_URL} className="px-5 py-2 text-lg font-semibold border-2 border-[#4EBFF7] text-[#4EBFF7] rounded-lg transition-all duration-300 hover:bg-[#4EBFF7] hover:text-white">Log In</a>
           {isMainPage && onOpenDemo ? (
             <button onClick={onOpenDemo} className="px-6 py-2 text-xl font-semibold bg-gradient-to-r from-[#4EBFF7] to-[#35A3E8] text-white rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-300/40 hover:saturate-150">Get Started</button>
           ) : (
@@ -81,7 +82,8 @@ export default function DentalScanNav({ activePage, onOpenDemo }: DentalScanNavP
                 <a href={isMainPage ? "#faq" : "/dentalscan#faq"} onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">FAQ</a>
               </div>
             </nav>
-            <div className="mt-6 px-4">
+            <div className="mt-6 px-4 space-y-3">
+              <a href={DASHBOARD_URL} className="block w-full px-6 py-3 text-lg font-semibold border-2 border-[#4EBFF7] text-[#4EBFF7] rounded-lg text-center hover:bg-[#4EBFF7] hover:text-white transition-all">Log In</a>
               {isMainPage && onOpenDemo ? (
                 <button onClick={() => { setMobileMenuOpen(false); onOpenDemo(); }} className="w-full px-6 py-3 text-lg font-semibold bg-gradient-to-r from-[#4EBFF7] to-[#35A3E8] text-white rounded-lg shadow-lg">Get Started</button>
               ) : (
