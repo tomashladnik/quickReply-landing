@@ -12,7 +12,7 @@ interface DentalScanNavProps {
 export default function DentalScanNav({ activePage, onOpenDemo }: DentalScanNavProps) {
   const isMainPage = activePage === 'home';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-const DASHBOARD_URL = "https://dashboard.replyquick.ai/entrance/dentalscan/select-organization";  
+const DASHBOARD_URL = "https://dashboard.dentalscan.us/entrance/dentalscan/select-organization";  
   return (
     <>
       <header className="sticky top-0 z-50 w-full h-[80px] bg-white shadow-[0_0_22px_#4ebff740] backdrop-blur-lg flex items-center px-4 sm:px-6 md:px-10 lg:px-58">
