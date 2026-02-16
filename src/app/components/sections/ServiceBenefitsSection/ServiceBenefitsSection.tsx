@@ -14,13 +14,13 @@ export const ServiceBenefitsSection = () => {
   return (
     <header className="sticky top-0 z-50 w-full h-[80px] bg-white shadow-[0_0_22px_#4ebff740] backdrop-blur-lg flex items-center justify-between px-4 sm:px-6 md:px-10 lg:px-58">
       {/* Logo */}
-      <Link href="/" className="z-20">
+      <Link href="/" className="z-20 flex items-center">
         <Image
-          src="/logo.png"
-          alt="Logo"
-          width={100}
-          height={100}
-          className="object-cover rounded-lg w-[82px] h-[46px]"
+          src="/DentalScan.png"
+          alt="DentalScan Logo"
+          width={200}
+          height={80}
+          className="h-20 w-auto object-cover rounded-lg"
         />
       </Link>
 

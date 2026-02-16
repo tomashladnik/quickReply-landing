@@ -12,8 +12,8 @@ export default function FooterSection() {
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
                 <Image
-                  src="/logo.png"
-                  alt="ReplyQuick Logo"
+                  src="/DentalScan.png"
+                  alt="DentalScan Logo"
                   width={24}
                   height={24}
                   className="w-full h-auto"

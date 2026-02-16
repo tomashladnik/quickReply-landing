@@ -16,8 +16,8 @@ const DASHBOARD_URL = "https://dashboard.dentalscan.us/entrance/dentalscan/selec
   return (
     <>
       <header className="sticky top-0 z-50 w-full h-[80px] bg-white shadow-[0_0_22px_#4ebff740] backdrop-blur-lg flex items-center px-4 sm:px-6 md:px-10 lg:px-58">
-        <Link href="/" className="z-20">
-          <Image src="/logo.png" alt="ReplyQuick Logo" width={100} height={100} className="object-cover rounded-lg w-[82px] h-[46px]" />
+        <Link href="/" className="z-20 flex items-center">
+          <Image src="/DentalScan.png" alt="DentalScan Logo" width={100} height={100} className="object-cover rounded-lg w-[82px] h-[46px]" />
         </Link>
         <div className="hidden md:flex ml-8 lg:ml-12">
           {isMainPage ? (

@@ -120,11 +120,11 @@ export default function SalesDocsPage() {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <Image
-              src="/logo.png"
-              alt="ReplyQuick"
-              width={32}
-              height={32}
-              className="shrink-0"
+              src="/DentalScan.png"
+              alt="DentalScan"
+              width={180}
+              height={60}
+              className="h-14 w-auto object-contain shrink-0"
             />
             <span className="text-base sm:text-xl font-bold text-gray-900 whitespace-nowrap">
               DentalScan – Sales Documentation

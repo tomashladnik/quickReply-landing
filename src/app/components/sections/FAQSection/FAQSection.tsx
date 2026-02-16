@@ -30,10 +30,10 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-3 lg:gap-x-8">
           {/* Logo and Tagline (First Column on LG screens) */}
           <div className="space-y-4">
-            <Link href="/" className="inline-block">
+            <Link href="/" className="rounded-lg overflow-hidden inline-block">
               <Image
-                src="/logo2.png" // Make sure this path is correct
-                alt="ReplyQuick Logo"
+                src="/DentalScan.png" // Make sure this path is correct
+                alt="DenatlScan Logo"
                 width={60}
                 height={60}
               />
