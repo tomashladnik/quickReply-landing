@@ -87,8 +87,8 @@ export const DifferenceSection = () => {
             </ul>
             {/* Watermark Logo */}
             <Image
-              src="/logo.png" // Make sure this path is correct
-              alt="ReplyQuick Watermark"
+              src="/DentalScan.png" // Make sure this path is correct
+              alt="DentalScan Watermark"
               width={150}
               height={150}
               className="absolute -bottom-5 -right-5 opacity-20 pointer-events-none"

@@ -247,7 +247,7 @@ function DentistDashboardClient() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Image src="/logo.png" alt="ReplyQuick" width={40} height={40} />
+            <Image src="/DentalScan.png" alt="DentalScan" width={180} height={60} className="h-14 w-auto object-contain" priority/>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xl font-bold text-gray-900">

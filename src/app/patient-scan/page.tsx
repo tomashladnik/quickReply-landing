@@ -188,11 +188,11 @@ function PatientScanPageClient() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <Image
-                src="/logo.png"
-                alt="ReplyQuick"
-                width={28}
-                height={28}
-                className="shrink-0"
+                src="/DentalScan.png"
+                alt="DentalScan"
+                width={180}
+                height={60}
+                className="h-14 w-auto object-contain shrink-0"
               />
               <span className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
                 DentalScan – Demo Dashboard
