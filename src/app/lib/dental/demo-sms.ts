@@ -3,7 +3,7 @@
 
 const REMOTE_SMS_URL =
   process.env.REPLYQUICK_SMS_URL ||
-  "https://dashboard.replyquick.ai/api/sms/send";
+  "https://dashboard.dentalscan.us/api/sms/send";
 
 export interface RemoteSmsResponse {
   success?: boolean;
